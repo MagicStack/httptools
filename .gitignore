@@ -24,3 +24,4 @@ __pycache__/
 .d8_history
 /*.egg
 /*.egg-info
+/dist

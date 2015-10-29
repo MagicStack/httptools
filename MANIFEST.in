@@ -1,0 +1,2 @@
+recursive-include vendor *.c *.h LICENSE* README*
+include MANIFEST.in LICENSE
