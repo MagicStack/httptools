@@ -1,4 +1,4 @@
-from libc.stdint cimport uint32_t, uint64_t
+from libc.stdint cimport uint16_t, uint32_t, uint64_t
 
 
 cdef extern from "../../vendor/http-parser/http_parser.h":
@@ -106,3 +106,31 @@ cdef extern from "../../vendor/http-parser/http_parser.h":
     const char *http_errno_name(http_errno err)
     const char *http_errno_description(http_errno err)
     const char *http_method_str(http_method m)
+
+    # URL Parser
+
+    enum http_parser_url_fields:
+        UF_SCHEMA   = 0,
+        UF_HOST     = 1,
+        UF_PORT     = 2,
+        UF_PATH     = 3,
+        UF_QUERY    = 4,
+        UF_FRAGMENT = 5,
+        UF_USERINFO = 6,
+        UF_MAX      = 7
+
+    struct http_parser_url_field_data:
+        uint16_t off
+        uint16_t len
+
+    struct http_parser_url:
+        uint16_t field_set
+        uint16_t port
+        http_parser_url_field_data[7] field_data
+
+    void http_parser_url_init(http_parser_url *u)
+
+    int http_parser_parse_url(const char *buf,
+                              size_t buflen,
+                              int is_connect,
+                              http_parser_url *u)

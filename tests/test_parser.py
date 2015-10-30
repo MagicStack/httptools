@@ -99,9 +99,8 @@ class TestResponseParser(unittest.TestCase):
 
     def test_parser_response_4(self):
         p = httptools.HttpResponseParser(None)
-        with self.assertRaises(httptools.HttpParserInvalidStatus):
+        with self.assertRaises(httptools.HttpParserInvalidStatusError):
             p.feed_data(b'HTTP/1.1 1299 FOOSPAM\r\n')
-
 
 
 class TestRequestParser(unittest.TestCase):
@@ -135,10 +134,56 @@ class TestRequestParser(unittest.TestCase):
 
     def test_parser_request_chunked_2(self):
         p = httptools.HttpRequestParser(None)
-        with self.assertRaises(httptools.HttpParserInvalidMethod):
+        with self.assertRaises(httptools.HttpParserInvalidMethodError):
             p.feed_data(b'SPAM /test.php?a=b+c HTTP/1.2')
 
     def test_parser_request_chunked_3(self):
         p = httptools.HttpRequestParser(None)
-        with self.assertRaises(httptools.HttpParserInvalidURL):
+        with self.assertRaises(httptools.HttpParserInvalidURLError):
             p.feed_data(b'POST  HTTP/1.2')
+
+
+class TestUrlParser(unittest.TestCase):
+
+    def parse(self, url:bytes):
+        parsed = httptools.parse_url(url)
+        return (parsed.schema, parsed.host, parsed.port, parsed.path,
+                parsed.query, parsed.fragment, parsed.userinfo)
+
+    def test_parser_url_1(self):
+        self.assertEqual(
+            self.parse(b'dsf://aaa/b/c?aa#123'),
+            (b'dsf', b'aaa', None, b'/b/c', b'aa', b'123', None))
+
+        self.assertEqual(
+            self.parse(b'dsf://i:n@aaa:88/b/c?aa#123'),
+            (b'dsf', b'aaa', 88, b'/b/c', b'aa', b'123', b'i:n'))
+
+        self.assertEqual(
+            self.parse(b'////'),
+            (None, None, None, b'////', None, None, None))
+
+        self.assertEqual(
+            self.parse(b'////1/1?a=b&c[]=d&c[]=z'),
+            (None, None, None, b'////1/1', b'a=b&c[]=d&c[]=z', None, None))
+
+        self.assertEqual(
+            self.parse(b'/////?#123'),
+            (None, None, None, b'/////', None, b'123', None))
+
+        self.assertEqual(
+            self.parse(b'/a/b/c?b=1&'),
+            (None, None, None, b'/a/b/c', b'b=1&', None, None))
+
+    def test_parser_url_2(self):
+        self.assertEqual(
+            self.parse(b''),
+            (None, None, None, None, None, None, None))
+
+    def test_parser_url_3(self):
+        with self.assertRaises(httptools.HttpParserInvalidURLError):
+            self.parse(b' ')
+
+    def test_parser_url_3(self):
+        with self.assertRaises(httptools.HttpParserInvalidURLError):
+            self.parse(b':///1')

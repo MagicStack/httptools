@@ -3,15 +3,18 @@ from libc.stdlib cimport malloc, free
 
 from .errors import (HttpParserError,
                      HttpParserCallbackError,
-                     HttpParserInvalidStatus,
-                     HttpParserInvalidMethod,
-                     HttpParserInvalidURL)
+                     HttpParserInvalidStatusError,
+                     HttpParserInvalidMethodError,
+                     HttpParserInvalidURLError)
 
+import cython
 cimport cparser
 
-__all__ = ('HttpRequestParser', 'HttpResponseParser')
+
+__all__ = ('HttpRequestParser', 'HttpResponseParser', 'parse_url')
 
 
+@cython.internal
 cdef class HttpParser:
 
     cdef cparser.http_parser* _cparser
@@ -290,15 +293,132 @@ cdef parser_error_from_errno(cparser.http_errno errno):
         cls = HttpParserCallbackError
 
     elif errno == cparser.HPE_INVALID_STATUS:
-        cls = HttpParserInvalidStatus
+        cls = HttpParserInvalidStatusError
 
     elif errno == cparser.HPE_INVALID_METHOD:
-        cls = HttpParserInvalidMethod
+        cls = HttpParserInvalidMethodError
 
     elif errno == cparser.HPE_INVALID_URL:
-        cls = HttpParserInvalidURL
+        cls = HttpParserInvalidURLError
 
     else:
         cls = HttpParserError
 
     return cls(desc.decode('latin-1'))
+
+
+cdef class URL:
+    cdef bytes _schema
+    cdef bytes _host
+    cdef object _port
+    cdef bytes _path
+    cdef bytes _query
+    cdef bytes _fragment
+    cdef bytes _userinfo
+
+    def __cinit__(self, bytes schema, bytes host, object port, bytes path,
+                  bytes query, bytes fragment, bytes userinfo):
+
+        self._schema = schema
+        self._host = host
+        self._port = port
+        self._path = path
+        self._query = query
+        self._fragment = fragment
+        self._userinfo = userinfo
+
+    property schema:
+        def __get__(self):
+            return self._schema
+
+    property host:
+        def __get__(self):
+            return self._host
+
+    property port:
+        def __get__(self):
+            return self._port
+
+    property path:
+        def __get__(self):
+            return self._path
+
+    property query:
+        def __get__(self):
+            return self._query
+
+    property fragment:
+        def __get__(self):
+            return self._fragment
+
+    property userinfo:
+        def __get__(self):
+            return self._userinfo
+
+    def __repr__(self):
+        return ('<URL schema: {!r}, host: {!r}, port: {!r}, path: {!r}, '
+                'query: {!r}, fragment: {!r}, userinfo: {!r}>'
+                .format(self.schema, self.host, self.port, self.path,
+                    self.query, self.fragment, self.userinfo))
+
+
+def parse_url(bytes url):
+    cdef:
+        size_t url_len = len(url)
+        cparser.http_parser_url* parsed
+        int res
+        bytes schema = None
+        bytes host = None
+        object port = None
+        bytes path = None
+        bytes query = None
+        bytes fragment = None
+        bytes userinfo = None
+        object result = None
+        int off
+        int ln
+
+    parsed = <cparser.http_parser_url*> malloc(sizeof(cparser.http_parser_url))
+    cparser.http_parser_url_init(parsed)
+
+    try:
+        res = cparser.http_parser_parse_url(url, url_len, 0, parsed)
+        if res == 0:
+            if parsed.field_set & (1 << cparser.UF_SCHEMA):
+                off = parsed.field_data[<int>cparser.UF_SCHEMA].off
+                ln = parsed.field_data[<int>cparser.UF_SCHEMA].len
+                schema = url[off:off+ln]
+
+            if parsed.field_set & (1 << cparser.UF_HOST):
+                off = parsed.field_data[<int>cparser.UF_HOST].off
+                ln = parsed.field_data[<int>cparser.UF_HOST].len
+                host = url[off:off+ln]
+
+            if parsed.field_set & (1 << cparser.UF_PORT):
+                port = parsed.port
+
+            if parsed.field_set & (1 << cparser.UF_PATH):
+                off = parsed.field_data[<int>cparser.UF_PATH].off
+                ln = parsed.field_data[<int>cparser.UF_PATH].len
+                path = url[off:off+ln]
+
+            if parsed.field_set & (1 << cparser.UF_QUERY):
+                off = parsed.field_data[<int>cparser.UF_QUERY].off
+                ln = parsed.field_data[<int>cparser.UF_QUERY].len
+                query = url[off:off+ln]
+
+            if parsed.field_set & (1 << cparser.UF_FRAGMENT):
+                off = parsed.field_data[<int>cparser.UF_FRAGMENT].off
+                ln = parsed.field_data[<int>cparser.UF_FRAGMENT].len
+                fragment = url[off:off+ln]
+
+            if parsed.field_set & (1 << cparser.UF_USERINFO):
+                off = parsed.field_data[<int>cparser.UF_USERINFO].off
+                ln = parsed.field_data[<int>cparser.UF_USERINFO].len
+                userinfo = url[off:off+ln]
+
+            return URL(schema, host, port, path, query, fragment, userinfo)
+        else:
+            raise HttpParserInvalidURLError("invalid url {!r}".format(url))
+    finally:
+        free(parsed)
