@@ -6,7 +6,7 @@ compile:
 	python3 setup.py build_ext --inplace
 
 
-release: compile
+release: compile test
 	python3 setup.py sdist upload
 
 
