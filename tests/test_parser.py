@@ -222,6 +222,11 @@ class TestUrlParser(unittest.TestCase):
         with self.assertRaises(httptools.HttpParserInvalidURLError):
             self.parse(b' ')
 
-    def test_parser_url_3(self):
+    def test_parser_url_4(self):
         with self.assertRaises(httptools.HttpParserInvalidURLError):
             self.parse(b':///1')
+
+    def test_parser_url_5(self):
+        self.assertEqual(
+            self.parse(b'http://[1:2::3:4]:67/'),
+            (b'http', b'1:2::3:4', 67, b'/', None, None, None))
