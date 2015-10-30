@@ -1,1 +1,1 @@
-from .parser import HttpParser, HttpParserError, MODE_REQUEST, MODE_RESPONSE
+from .parser import HttpRequestParser, HttpResponseParser, HttpParserError

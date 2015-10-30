@@ -4,10 +4,6 @@ from libc.stdlib cimport malloc, free
 cimport cparser
 
 
-MODE_REQUEST = cparser.HTTP_REQUEST
-MODE_RESPONSE = cparser.HTTP_RESPONSE
-
-
 class HttpParserError(Exception):
     pass
 
@@ -24,11 +20,7 @@ cdef class HttpParser:
     cdef bytes _current_header_name
     cdef bytes _current_header_value
 
-
-    def __cinit__(self,
-                  protocol,
-                  cparser.http_parser_type mode=cparser.HTTP_BOTH):
-
+    def __cinit__(self, protocol):
         self._cparser = <cparser.http_parser*> \
                                 malloc(sizeof(cparser.http_parser))
         if self._cparser is NULL:
@@ -39,6 +31,13 @@ cdef class HttpParser:
         if self._csettings is NULL:
             raise MemoryError()
 
+    def __dealloc__(self):
+        if self._cparser is not NULL:
+            free(self._cparser)
+        if self._csettings is not NULL:
+            free(self._csettings)
+
+    cdef _init(self, protocol, cparser.http_parser_type mode):
         cparser.http_parser_init(self._cparser, mode)
         self._cparser.data = <void*>self
 
@@ -46,16 +45,6 @@ cdef class HttpParser:
 
         self._current_header_name = None
         self._current_header_value = None
-
-        if mode == cparser.HTTP_REQUEST or mode == cparser.HTTP_BOTH:
-            self._proto_on_url = getattr(protocol, 'on_url', None)
-            if self._proto_on_url is not None:
-                self._csettings.on_url = cb_on_url
-
-        if mode == cparser.HTTP_RESPONSE or mode == cparser.HTTP_BOTH:
-            self._proto_on_status = getattr(protocol, 'on_status', None)
-            if self._proto_on_status is not None:
-                self._csettings.on_status = cb_on_status
 
         self._proto_on_header = getattr(protocol, 'on_header', None)
         if self._proto_on_header is not None:
@@ -83,12 +72,6 @@ cdef class HttpParser:
             protocol, 'on_chunk_complete', None)
         if self._proto_on_chunk_complete is not None:
             self._csettings.on_chunk_complete = cb_on_chunk_complete
-
-    def __dealloc__(self):
-        if self._cparser is not NULL:
-            free(self._cparser)
-        if self._csettings is not NULL:
-            free(self._csettings)
 
     cdef _on_header_field(self, bytes field):
         if self._current_header_name is not None:
@@ -121,15 +104,6 @@ cdef class HttpParser:
         cdef cparser.http_parser* parser = self._cparser
         return '{}.{}'.format(parser.http_major, parser.http_minor)
 
-    def get_status_code(self):
-        cdef cparser.http_parser* parser = self._cparser
-        return parser.status_code
-
-    def get_method(self):
-        cdef cparser.http_parser* parser = self._cparser
-        return (cparser.http_method_str(<cparser.http_method> parser.method)
-                .decode('latin-1'))
-
     def should_keep_alive(self):
         return bool(cparser.http_should_keep_alive(self._cparser))
 
@@ -149,6 +123,33 @@ cdef class HttpParser:
                 <cparser.http_errno> self._cparser.http_errno)
         if nb != data_len:
             raise HttpParserError('not all of the data was parsed')
+
+
+cdef class HttpRequestParser(HttpParser):
+    def __init__(self, protocol):
+        self._init(protocol, cparser.HTTP_REQUEST)
+
+        self._proto_on_url = getattr(protocol, 'on_url', None)
+        if self._proto_on_url is not None:
+            self._csettings.on_url = cb_on_url
+
+    def get_method(self):
+        cdef cparser.http_parser* parser = self._cparser
+        return (cparser.http_method_str(<cparser.http_method> parser.method)
+                .decode('latin-1'))
+
+
+cdef class HttpResponseParser(HttpParser):
+    def __init__(self, protocol):
+        self._init(protocol, cparser.HTTP_RESPONSE)
+
+        self._proto_on_status = getattr(protocol, 'on_status', None)
+        if self._proto_on_status is not None:
+            self._csettings.on_status = cb_on_status
+
+    def get_status_code(self):
+        cdef cparser.http_parser* parser = self._cparser
+        return parser.status_code
 
 
 cdef int cb_on_message_begin(cparser.http_parser* parser):

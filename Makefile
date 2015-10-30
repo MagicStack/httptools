@@ -5,3 +5,7 @@ compile:
 
 release: compile
 	python3 setup.py sdist upload
+
+
+test:
+	python3 -m unittest discover -s tests
