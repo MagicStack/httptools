@@ -1,3 +1,6 @@
+.PHONY: compile release test
+
+
 compile:
 	cython httptools/parser/parser.pyx
 	python3 setup.py build_ext --inplace
