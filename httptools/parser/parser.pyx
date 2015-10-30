@@ -134,7 +134,7 @@ cdef class HttpParser:
     def feed_data(self, bytes data):
         cdef:
             size_t data_len = len(data)
-            int nb
+            size_t nb
 
         nb = cparser.http_parser_execute(
             self._cparser,
