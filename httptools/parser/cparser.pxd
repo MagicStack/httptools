@@ -126,7 +126,7 @@ cdef extern from "../../vendor/http-parser/http_parser.h":
     struct http_parser_url:
         uint16_t field_set
         uint16_t port
-        http_parser_url_field_data[7] field_data
+        http_parser_url_field_data[<int>UF_MAX] field_data
 
     void http_parser_url_init(http_parser_url *u)
 
