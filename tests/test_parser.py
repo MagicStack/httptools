@@ -102,6 +102,21 @@ class TestResponseParser(unittest.TestCase):
         with self.assertRaises(httptools.HttpParserInvalidStatusError):
             p.feed_data(b'HTTP/1.1 1299 FOOSPAM\r\n')
 
+    def test_parser_response_5(self):
+        m = mock.Mock()
+        m.on_status = None
+        m.on_header = None
+        m.on_body = None
+        m.on_headers_complete = None
+        m.on_chunk_header = None
+        m.on_chunk_complete = None
+
+        p = httptools.HttpResponseParser(m)
+        p.feed_data(RESPONSE1_HEAD)
+        p.feed_data(RESPONSE1_BODY)
+
+        m.on_message_complete.assert_called_once_with()
+
 
 class TestRequestParser(unittest.TestCase):
 
@@ -111,7 +126,7 @@ class TestRequestParser(unittest.TestCase):
 
         p.feed_data(CHUNKED_REQUEST1_1)
 
-        self.assertEqual(p.get_method(), 'POST')
+        self.assertEqual(p.get_method(), b'POST')
 
         m.on_url.assert_called_once_with(b'/test.php?a=b+c')
         self.assertEqual(p.get_http_version(), '1.2')
@@ -133,11 +148,34 @@ class TestRequestParser(unittest.TestCase):
         m.on_message_complete.assert_called_once_with()
 
     def test_parser_request_chunked_2(self):
+        m = mock.Mock()
+
+        headers = {}
+        m.on_header.side_effect = headers.__setitem__
+
+        m.on_url = None
+        m.on_body = None
+        m.on_headers_complete = None
+        m.on_chunk_header = None
+        m.on_chunk_complete = None
+
+        p = httptools.HttpRequestParser(m)
+        p.feed_data(CHUNKED_REQUEST1_1)
+        p.feed_data(CHUNKED_REQUEST1_2)
+
+        self.assertEqual(
+            headers,
+            {b'User-Agent': b'spam',
+             b'Transfer-Encoding': b'chunked',
+             b'Host': b'bar',
+             b'Vary': b'*'})
+
+    def test_parser_request_2(self):
         p = httptools.HttpRequestParser(None)
         with self.assertRaises(httptools.HttpParserInvalidMethodError):
             p.feed_data(b'SPAM /test.php?a=b+c HTTP/1.2')
 
-    def test_parser_request_chunked_3(self):
+    def test_parser_request_3(self):
         p = httptools.HttpRequestParser(None)
         with self.assertRaises(httptools.HttpParserInvalidURLError):
             p.feed_data(b'POST  HTTP/1.2')

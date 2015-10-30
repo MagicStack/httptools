@@ -17,16 +17,17 @@ __all__ = ('HttpRequestParser', 'HttpResponseParser', 'parse_url')
 @cython.internal
 cdef class HttpParser:
 
-    cdef cparser.http_parser* _cparser
-    cdef cparser.http_parser_settings* _csettings
+    cdef:
+        cparser.http_parser* _cparser
+        cparser.http_parser_settings* _csettings
 
-    cdef _proto_on_url, _proto_on_status, _proto_on_body, \
-         _proto_on_header, _proto_on_headers_complete, \
-         _proto_on_message_complete, _proto_on_chunk_header, \
-         _proto_on_chunk_complete
+        bytes _current_header_name
+        bytes _current_header_value
 
-    cdef bytes _current_header_name
-    cdef bytes _current_header_value
+        _proto_on_url, _proto_on_status, _proto_on_body, \
+        _proto_on_header, _proto_on_headers_complete, \
+        _proto_on_message_complete, _proto_on_chunk_header, \
+        _proto_on_chunk_complete
 
     def __cinit__(self, protocol):
         self._cparser = <cparser.http_parser*> \
@@ -73,20 +74,25 @@ cdef class HttpParser:
 
         self._proto_on_chunk_header = getattr(
             protocol, 'on_chunk_header', None)
-        if self._proto_on_chunk_header is not None:
-            self._csettings.on_chunk_header = cb_on_chunk_header
+        self._csettings.on_chunk_header = cb_on_chunk_header
 
         self._proto_on_chunk_complete = getattr(
             protocol, 'on_chunk_complete', None)
-        if self._proto_on_chunk_complete is not None:
-            self._csettings.on_chunk_complete = cb_on_chunk_complete
+        self._csettings.on_chunk_complete = cb_on_chunk_complete
+
+    cdef _maybe_call_on_header(self):
+        if self._current_header_name is not None:
+            current_header_name = self._current_header_name
+            current_header_value = self._current_header_value
+
+            self._current_header_name = self._current_header_value = None
+
+            if self._proto_on_header is not None:
+                self._proto_on_header(current_header_name,
+                                      current_header_value)
 
     cdef _on_header_field(self, bytes field):
-        if self._current_header_name is not None:
-            self._proto_on_header(self._current_header_name,
-                                  self._current_header_value)
-            self._current_header_value = None
-
+        self._maybe_call_on_header()
         self._current_header_name = field
 
     cdef _on_header_value(self, bytes val):
@@ -97,11 +103,7 @@ cdef class HttpParser:
             self._current_header_value += val
 
     cdef _on_headers_complete(self):
-        if self._current_header_name is not None:
-            self._proto_on_header(self._current_header_name,
-                                  self._current_header_value)
-
-            self._current_header_value = self._current_header_name = None
+        self._maybe_call_on_header()
 
         if self._proto_on_headers_complete is not None:
             self._proto_on_headers_complete()
@@ -110,14 +112,15 @@ cdef class HttpParser:
         if (self._current_header_value is not None or
             self._current_header_name is not None):
             raise HttpParserError('invalid headers state')
-        self._proto_on_chunk_header()
+
+        if self._proto_on_chunk_header is not None:
+            self._proto_on_chunk_header()
 
     cdef _on_chunk_complete(self):
-        if self._current_header_name is not None:
-            self._proto_on_header(self._current_header_name,
-                                  self._current_header_value)
+        self._maybe_call_on_header()
 
-        self._proto_on_chunk_complete()
+        if self._proto_on_chunk_complete is not None:
+            self._proto_on_chunk_complete()
 
     ### Public API ###
 
@@ -129,7 +132,9 @@ cdef class HttpParser:
         return bool(cparser.http_should_keep_alive(self._cparser))
 
     def feed_data(self, bytes data):
-        data_len = len(data)
+        cdef:
+            size_t data_len = len(data)
+            int nb
 
         nb = cparser.http_parser_execute(
             self._cparser,
@@ -157,8 +162,7 @@ cdef class HttpRequestParser(HttpParser):
 
     def get_method(self):
         cdef cparser.http_parser* parser = self._cparser
-        return (cparser.http_method_str(<cparser.http_method> parser.method)
-                .decode('latin-1'))
+        return cparser.http_method_str(<cparser.http_method> parser.method)
 
 
 cdef class HttpResponseParser(HttpParser):
@@ -176,7 +180,7 @@ cdef class HttpResponseParser(HttpParser):
 
 
 cdef int cb_on_message_begin(cparser.http_parser* parser):
-    pyparser = <HttpParser>parser.data
+    cdef HttpParser pyparser = <HttpParser>parser.data
     try:
         pyparser._on_message_begin()
     except:
@@ -186,7 +190,7 @@ cdef int cb_on_message_begin(cparser.http_parser* parser):
 
 
 cdef int cb_on_url(cparser.http_parser* parser, const char *at, size_t length):
-    pyparser = <HttpParser>parser.data
+    cdef HttpParser pyparser = <HttpParser>parser.data
     try:
         pyparser._proto_on_url(at[:length])
     except:
@@ -196,7 +200,7 @@ cdef int cb_on_url(cparser.http_parser* parser, const char *at, size_t length):
 
 
 cdef int cb_on_status(cparser.http_parser* parser, const char *at, size_t length):
-    pyparser = <HttpParser>parser.data
+    cdef HttpParser pyparser = <HttpParser>parser.data
     try:
         pyparser._proto_on_status(at[:length])
     except:
@@ -207,7 +211,7 @@ cdef int cb_on_status(cparser.http_parser* parser, const char *at, size_t length
 
 cdef int cb_on_header_field(cparser.http_parser* parser,
                           const char *at, size_t length):
-    pyparser = <HttpParser>parser.data
+    cdef HttpParser pyparser = <HttpParser>parser.data
     try:
         pyparser._on_header_field(at[:length])
     except:
@@ -218,7 +222,7 @@ cdef int cb_on_header_field(cparser.http_parser* parser,
 
 cdef int cb_on_header_value(cparser.http_parser* parser,
                           const char *at, size_t length):
-    pyparser = <HttpParser>parser.data
+    cdef HttpParser pyparser = <HttpParser>parser.data
     try:
         pyparser._on_header_value(at[:length])
     except:
@@ -228,7 +232,7 @@ cdef int cb_on_header_value(cparser.http_parser* parser,
 
 
 cdef int cb_on_headers_complete(cparser.http_parser* parser):
-    pyparser = <HttpParser>parser.data
+    cdef HttpParser pyparser = <HttpParser>parser.data
     try:
         pyparser._on_headers_complete()
     except:
@@ -238,7 +242,7 @@ cdef int cb_on_headers_complete(cparser.http_parser* parser):
 
 
 cdef int cb_on_body(cparser.http_parser* parser, const char *at, size_t length):
-    pyparser = <HttpParser>parser.data
+    cdef HttpParser pyparser = <HttpParser>parser.data
     try:
         pyparser._proto_on_body(at[:length])
     except:
@@ -248,7 +252,7 @@ cdef int cb_on_body(cparser.http_parser* parser, const char *at, size_t length):
 
 
 cdef int cb_on_message_complete(cparser.http_parser* parser):
-    pyparser = <HttpParser>parser.data
+    cdef HttpParser pyparser = <HttpParser>parser.data
     try:
         pyparser._proto_on_message_complete()
     except:
@@ -258,7 +262,7 @@ cdef int cb_on_message_complete(cparser.http_parser* parser):
 
 
 cdef int cb_on_chunk_header(cparser.http_parser* parser):
-    pyparser = <HttpParser>parser.data
+    cdef HttpParser pyparser = <HttpParser>parser.data
     try:
         pyparser._on_chunk_header()
     except:
@@ -268,7 +272,7 @@ cdef int cb_on_chunk_header(cparser.http_parser* parser):
 
 
 cdef int cb_on_chunk_complete(cparser.http_parser* parser):
-    pyparser = <HttpParser>parser.data
+    cdef HttpParser pyparser = <HttpParser>parser.data
     try:
         pyparser._on_chunk_complete()
     except:
@@ -278,7 +282,7 @@ cdef int cb_on_chunk_complete(cparser.http_parser* parser):
 
 
 cdef parser_error_from_errno(cparser.http_errno errno):
-    desc = cparser.http_errno_description(errno)
+    cdef bytes desc = cparser.http_errno_description(errno)
 
     if errno in (cparser.HPE_CB_message_begin,
                  cparser.HPE_CB_url,
