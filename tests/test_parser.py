@@ -63,7 +63,7 @@ class TestResponseParser(unittest.TestCase):
                          b'text/html;  charset=UTF-8')
 
         self.assertFalse(m.on_body.called)
-        p.feed_data(RESPONSE1_BODY)
+        p.feed_data(bytearray(RESPONSE1_BODY))
         m.on_body.assert_called_once_with(RESPONSE1_BODY)
 
         m.on_message_complete.assert_called_once_with()
@@ -230,3 +230,8 @@ class TestUrlParser(unittest.TestCase):
         self.assertEqual(
             self.parse(b'http://[1:2::3:4]:67/'),
             (b'http', b'1:2::3:4', 67, b'/', None, None, None))
+
+    def test_parser_url_6(self):
+        self.assertEqual(
+            self.parse(bytearray(b'/')),
+            (None, None, None, b'/', None, None, None))

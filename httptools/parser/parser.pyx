@@ -131,7 +131,7 @@ cdef class HttpParser:
     def should_keep_alive(self):
         return bool(cparser.http_should_keep_alive(self._cparser))
 
-    def feed_data(self, bytes data):
+    def feed_data(self, const char* data):
         cdef:
             size_t data_len = len(data)
             size_t nb
@@ -319,7 +319,7 @@ cdef class URL:
                     self.query, self.fragment, self.userinfo))
 
 
-def parse_url(bytes url):
+def parse_url(const char* url):
     cdef:
         size_t url_len = len(url)
         cparser.http_parser_url* parsed
