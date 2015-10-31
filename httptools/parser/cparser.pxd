@@ -2,8 +2,11 @@ from libc.stdint cimport uint16_t, uint32_t, uint64_t
 
 
 cdef extern from "../../vendor/http-parser/http_parser.h":
-    ctypedef int (*http_data_cb) (http_parser*, const char *at, size_t length)
-    ctypedef int (*http_cb) (http_parser*)
+    ctypedef int (*http_data_cb) (http_parser*,
+                                  const char *at,
+                                  size_t length) except -1
+
+    ctypedef int (*http_cb) (http_parser*) except -1
 
     struct http_parser:
         unsigned int type
