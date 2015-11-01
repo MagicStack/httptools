@@ -1,7 +1,7 @@
 #cython: language_level=3
 
 from __future__ import print_function
-from libc.stdlib cimport malloc, free
+from cpython.mem cimport PyMem_Malloc, PyMem_Free
 
 from .errors import (HttpParserError,
                      HttpParserCallbackError,
@@ -31,22 +31,20 @@ cdef class HttpParser:
         _proto_on_message_complete, _proto_on_chunk_header, \
         _proto_on_chunk_complete
 
-    def __cinit__(self, protocol):
+    def __cinit__(self):
         self._cparser = <cparser.http_parser*> \
-                                malloc(sizeof(cparser.http_parser))
+                                PyMem_Malloc(sizeof(cparser.http_parser))
         if self._cparser is NULL:
             raise MemoryError()
 
         self._csettings = <cparser.http_parser_settings*> \
-                                malloc(sizeof(cparser.http_parser_settings))
+                                PyMem_Malloc(sizeof(cparser.http_parser_settings))
         if self._csettings is NULL:
             raise MemoryError()
 
     def __dealloc__(self):
-        if self._cparser is not NULL:
-            free(self._cparser)
-        if self._csettings is not NULL:
-            free(self._csettings)
+        PyMem_Free(self._cparser)
+        PyMem_Free(self._csettings)
 
     cdef _init(self, protocol, cparser.http_parser_type mode):
         cparser.http_parser_init(self._cparser, mode)
@@ -337,7 +335,8 @@ def parse_url(const char* url):
         int off
         int ln
 
-    parsed = <cparser.http_parser_url*> malloc(sizeof(cparser.http_parser_url))
+    parsed = <cparser.http_parser_url*> \
+                        PyMem_Malloc(sizeof(cparser.http_parser_url))
     cparser.http_parser_url_init(parsed)
 
     try:
@@ -380,4 +379,4 @@ def parse_url(const char* url):
         else:
             raise HttpParserInvalidURLError("invalid url {!r}".format(url))
     finally:
-        free(parsed)
+        PyMem_Free(parsed)
