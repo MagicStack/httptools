@@ -1,3 +1,5 @@
+#cython: language_level=3
+
 from __future__ import print_function
 from libc.stdlib cimport malloc, free
 
@@ -8,7 +10,7 @@ from .errors import (HttpParserError,
                      HttpParserInvalidURLError)
 
 import cython
-cimport cparser
+from . cimport cparser
 
 
 __all__ = ('HttpRequestParser', 'HttpResponseParser', 'parse_url')
