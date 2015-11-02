@@ -235,3 +235,9 @@ class TestUrlParser(unittest.TestCase):
         self.assertEqual(
             self.parse(bytearray(b'/')),
             (None, None, None, b'/', None, None, None))
+
+    def test_parser_url_7(self):
+        url = httptools.parse_url(b'/')
+        with self.assertRaisesRegex(AttributeError, 'not writable'):
+            url.port = 0
+

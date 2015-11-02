@@ -265,52 +265,24 @@ cdef parser_error_from_errno(cparser.http_errno errno):
 
 
 cdef class URL:
-    cdef bytes _schema
-    cdef bytes _host
-    cdef object _port
-    cdef bytes _path
-    cdef bytes _query
-    cdef bytes _fragment
-    cdef bytes _userinfo
+    cdef readonly bytes schema
+    cdef readonly bytes host
+    cdef readonly object port
+    cdef readonly bytes path
+    cdef readonly bytes query
+    cdef readonly bytes fragment
+    cdef readonly bytes userinfo
 
     def __cinit__(self, bytes schema, bytes host, object port, bytes path,
                   bytes query, bytes fragment, bytes userinfo):
 
-        self._schema = schema
-        self._host = host
-        self._port = port
-        self._path = path
-        self._query = query
-        self._fragment = fragment
-        self._userinfo = userinfo
-
-    property schema:
-        def __get__(self):
-            return self._schema
-
-    property host:
-        def __get__(self):
-            return self._host
-
-    property port:
-        def __get__(self):
-            return self._port
-
-    property path:
-        def __get__(self):
-            return self._path
-
-    property query:
-        def __get__(self):
-            return self._query
-
-    property fragment:
-        def __get__(self):
-            return self._fragment
-
-    property userinfo:
-        def __get__(self):
-            return self._userinfo
+        self.schema = schema
+        self.host = host
+        self.port = port
+        self.path = path
+        self.query = query
+        self.fragment = fragment
+        self.userinfo = userinfo
 
     def __repr__(self):
         return ('<URL schema: {!r}, host: {!r}, port: {!r}, path: {!r}, '
