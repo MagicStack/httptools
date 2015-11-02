@@ -241,3 +241,7 @@ class TestUrlParser(unittest.TestCase):
         with self.assertRaisesRegex(AttributeError, 'not writable'):
             url.port = 0
 
+    def test_parser_url_8(self):
+        with self.assertRaises(TypeError):
+            httptools.parse_url(None)
+
