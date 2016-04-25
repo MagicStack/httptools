@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/MagicStack/httptools.svg?branch=master)](https://travis-ci.org/MagicStack/httptools)
+
 httptools is a Python binding for nodejs HTTP parser.  It's still in a
 very early development stage, expect APIs to break.
 
