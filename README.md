@@ -3,6 +3,8 @@
 httptools is a Python binding for nodejs HTTP parser.  It's still in a
 very early development stage, expect APIs to break.
 
+The package is available on PyPI: `pip install httptools`.
+
 
 # APIs
 
