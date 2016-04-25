@@ -9,7 +9,7 @@ from .errors import (HttpParserError,
                      HttpParserInvalidMethodError,
                      HttpParserInvalidURLError)
 
-import cython
+cimport cython
 from . cimport cparser
 
 

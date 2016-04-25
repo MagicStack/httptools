@@ -244,4 +244,3 @@ class TestUrlParser(unittest.TestCase):
     def test_parser_url_8(self):
         with self.assertRaises(TypeError):
             httptools.parse_url(None)
-
