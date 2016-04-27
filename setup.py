@@ -3,7 +3,7 @@ from setuptools import setup, Extension
 
 setup(
     name='httptools',
-    version='0.0.4',
+    version='0.0.5',
     description='A collection of framework independent HTTP protocol utils.',
     classifiers=[
         'License :: OSI Approved :: MIT License',
@@ -22,7 +22,8 @@ setup(
     ext_modules=[
         Extension("httptools.parser.parser",
                   ["httptools/parser/parser.c",
-                   "vendor/http-parser/http_parser.c"])
+                   "vendor/http-parser/http_parser.c"],
+                  extra_compile_args=['-O2'])
     ],
     provides=['httptools'],
     include_package_data=True
