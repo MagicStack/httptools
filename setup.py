@@ -3,7 +3,7 @@ from setuptools import setup, Extension
 
 setup(
     name='httptools',
-    version='0.0.6',
+    version='0.0.7',
     description='A collection of framework independent HTTP protocol utils.',
     classifiers=[
         'License :: OSI Approved :: MIT License',
