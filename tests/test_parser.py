@@ -135,6 +135,8 @@ class TestRequestParser(unittest.TestCase):
 
         self.assertEqual(p.get_method(), b'POST')
 
+        m.on_message_begin.assert_called_once_with()
+
         m.on_url.assert_called_once_with(b'/test.php?a=b+c')
         self.assertEqual(p.get_http_version(), '1.2')
 
@@ -143,6 +145,7 @@ class TestRequestParser(unittest.TestCase):
         m.on_chunk_complete.assert_called_with()
 
         self.assertFalse(m.on_message_complete.called)
+        m.on_message_begin.assert_called_once_with()
 
         m.reset_mock()
         p.feed_data(CHUNKED_REQUEST1_2)
@@ -151,6 +154,8 @@ class TestRequestParser(unittest.TestCase):
         m.on_chunk_complete.assert_called_with()
         m.on_header.assert_called_with(b'User-Agent', b'spam')
         self.assertEqual(m.on_header.call_count, 2)
+
+        self.assertFalse(m.on_message_begin.called)
 
         m.on_message_complete.assert_called_once_with()
 

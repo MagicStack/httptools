@@ -31,7 +31,7 @@ cdef class HttpParser:
         _proto_on_url, _proto_on_status, _proto_on_body, \
         _proto_on_header, _proto_on_headers_complete, \
         _proto_on_message_complete, _proto_on_chunk_header, \
-        _proto_on_chunk_complete
+        _proto_on_chunk_complete, _proto_on_message_begin
 
         Py_buffer py_buf
 
@@ -70,6 +70,11 @@ cdef class HttpParser:
         self._proto_on_body = getattr(protocol, 'on_body', None)
         if self._proto_on_body is not None:
             self._csettings.on_body = cb_on_body
+
+        self._proto_on_message_begin = getattr(
+            protocol, 'on_message_begin', None)
+        if self._proto_on_message_begin is not None:
+            self._csettings.on_message_begin = cb_on_message_begin
 
         self._proto_on_message_complete = getattr(
             protocol, 'on_message_complete', None)
@@ -190,7 +195,7 @@ cdef class HttpResponseParser(HttpParser):
 
 cdef int cb_on_message_begin(cparser.http_parser* parser) except -1:
     cdef HttpParser pyparser = <HttpParser>parser.data
-    pyparser._on_message_begin()
+    pyparser._proto_on_message_begin()
 
 
 cdef int cb_on_url(cparser.http_parser* parser,
