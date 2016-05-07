@@ -310,9 +310,10 @@ cdef class URL:
                     self.query, self.fragment, self.userinfo))
 
 
-def parse_url(const char* url):
+def parse_url(url):
     cdef:
-        size_t url_len = len(url)
+        Py_buffer py_buf
+        char* buf_data
         cparser.http_parser_url* parsed
         int res
         bytes schema = None
@@ -330,18 +331,21 @@ def parse_url(const char* url):
                         PyMem_Malloc(sizeof(cparser.http_parser_url))
     cparser.http_parser_url_init(parsed)
 
+    PyObject_GetBuffer(url, &py_buf, PyBUF_SIMPLE)
     try:
-        res = cparser.http_parser_parse_url(url, url_len, 0, parsed)
+        buf_data = <char*>py_buf.buf
+        res = cparser.http_parser_parse_url(buf_data, py_buf.len, 0, parsed)
+
         if res == 0:
             if parsed.field_set & (1 << cparser.UF_SCHEMA):
                 off = parsed.field_data[<int>cparser.UF_SCHEMA].off
                 ln = parsed.field_data[<int>cparser.UF_SCHEMA].len
-                schema = url[off:off+ln]
+                schema = buf_data[off:off+ln]
 
             if parsed.field_set & (1 << cparser.UF_HOST):
                 off = parsed.field_data[<int>cparser.UF_HOST].off
                 ln = parsed.field_data[<int>cparser.UF_HOST].len
-                host = url[off:off+ln]
+                host = buf_data[off:off+ln]
 
             if parsed.field_set & (1 << cparser.UF_PORT):
                 port = parsed.port
@@ -349,25 +353,26 @@ def parse_url(const char* url):
             if parsed.field_set & (1 << cparser.UF_PATH):
                 off = parsed.field_data[<int>cparser.UF_PATH].off
                 ln = parsed.field_data[<int>cparser.UF_PATH].len
-                path = url[off:off+ln]
+                path = buf_data[off:off+ln]
 
             if parsed.field_set & (1 << cparser.UF_QUERY):
                 off = parsed.field_data[<int>cparser.UF_QUERY].off
                 ln = parsed.field_data[<int>cparser.UF_QUERY].len
-                query = url[off:off+ln]
+                query = buf_data[off:off+ln]
 
             if parsed.field_set & (1 << cparser.UF_FRAGMENT):
                 off = parsed.field_data[<int>cparser.UF_FRAGMENT].off
                 ln = parsed.field_data[<int>cparser.UF_FRAGMENT].len
-                fragment = url[off:off+ln]
+                fragment = buf_data[off:off+ln]
 
             if parsed.field_set & (1 << cparser.UF_USERINFO):
                 off = parsed.field_data[<int>cparser.UF_USERINFO].off
                 ln = parsed.field_data[<int>cparser.UF_USERINFO].len
-                userinfo = url[off:off+ln]
+                userinfo = buf_data[off:off+ln]
 
             return URL(schema, host, port, path, query, fragment, userinfo)
         else:
             raise HttpParserInvalidURLError("invalid url {!r}".format(url))
     finally:
+        PyBuffer_Release(&py_buf)
         PyMem_Free(parsed)

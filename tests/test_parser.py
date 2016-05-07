@@ -316,3 +316,12 @@ class TestUrlParser(unittest.TestCase):
     def test_parser_url_8(self):
         with self.assertRaises(TypeError):
             httptools.parse_url(None)
+
+    def test_parser_url_9(self):
+        with self.assertRaisesRegex(httptools.HttpParserInvalidURLError,
+                                    r'a\\x00aa'):
+            self.parse(b'dsf://a\x00aa')
+
+    def test_parser_url_10(self):
+        with self.assertRaisesRegex(TypeError, 'a bytes-like object'):
+            self.parse('dsf://aaa')
