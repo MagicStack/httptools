@@ -264,6 +264,7 @@ cdef parser_error_from_errno(cparser.http_errno errno):
     return cls(desc.decode('latin-1'))
 
 
+@cython.freelist(250)
 cdef class URL:
     cdef readonly bytes schema
     cdef readonly bytes host
