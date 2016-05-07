@@ -2,6 +2,8 @@
 
 from __future__ import print_function
 from cpython.mem cimport PyMem_Malloc, PyMem_Free
+from cpython cimport PyObject_GetBuffer, PyBuffer_Release, PyBUF_SIMPLE, \
+                     Py_buffer, PyBytes_AsString
 
 from .errors import (HttpParserError,
                      HttpParserCallbackError,
@@ -30,6 +32,8 @@ cdef class HttpParser:
         _proto_on_header, _proto_on_headers_complete, \
         _proto_on_message_complete, _proto_on_chunk_header, \
         _proto_on_chunk_complete
+
+        Py_buffer py_buf
 
     def __cinit__(self):
         self._cparser = <cparser.http_parser*> \
@@ -131,16 +135,21 @@ cdef class HttpParser:
     def should_keep_alive(self):
         return bool(cparser.http_should_keep_alive(self._cparser))
 
-    def feed_data(self, const char* data):
+    def feed_data(self, data):
         cdef:
-            size_t data_len = len(data)
+            size_t data_len
             size_t nb
+
+        PyObject_GetBuffer(data, &self.py_buf, PyBUF_SIMPLE)
+        data_len = <size_t>self.py_buf.len
 
         nb = cparser.http_parser_execute(
             self._cparser,
             self._csettings,
-            data,
+            <char*>self.py_buf.buf,
             data_len)
+
+        PyBuffer_Release(&self.py_buf)
 
         # TODO: Handle parser->upgrade
 

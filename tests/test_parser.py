@@ -38,6 +38,13 @@ Transfer-Encoding: chunked
 
 CHUNKED_REQUEST1_2 = b'''0\r\nVary: *\r\nUser-Agent: spam\r\n\r\n'''
 
+CHUNKED_REQUEST1_3 = b'''POST /test.php?a=b+c HTTP/1.2
+User-Agent: Fooo
+Host: bar
+Transfer-Encoding: chunked
+
+b\r\n+\xce\xcfM\xb5MI,I\x04\x00\r\n0\r\n\r\n'''
+
 
 class TestResponseParser(unittest.TestCase):
 
@@ -79,7 +86,7 @@ class TestResponseParser(unittest.TestCase):
             p.feed_data(b'12123123')
 
     def test_parser_response_2(self):
-        with self.assertRaisesRegex(TypeError, 'expected bytes'):
+        with self.assertRaisesRegex(TypeError, 'a bytes-like object'):
             httptools.HttpResponseParser(None).feed_data('')
 
     def test_parser_response_3(self):
@@ -170,6 +177,23 @@ class TestRequestParser(unittest.TestCase):
              b'Host': b'bar',
              b'Vary': b'*'})
 
+    def test_parser_request_chunked_3(self):
+        m = mock.Mock()
+        p = httptools.HttpRequestParser(m)
+
+        p.feed_data(CHUNKED_REQUEST1_3)
+
+        self.assertEqual(p.get_method(), b'POST')
+
+        m.on_url.assert_called_once_with(b'/test.php?a=b+c')
+        self.assertEqual(p.get_http_version(), '1.2')
+
+        m.on_header.assert_called_with(b'Transfer-Encoding', b'chunked')
+        m.on_chunk_header.assert_called_with()
+        m.on_chunk_complete.assert_called_with()
+
+        self.assertTrue(m.on_message_complete.called)
+
     def test_parser_request_2(self):
         p = httptools.HttpRequestParser(None)
         with self.assertRaises(httptools.HttpParserInvalidMethodError):
@@ -179,6 +203,11 @@ class TestRequestParser(unittest.TestCase):
         p = httptools.HttpRequestParser(None)
         with self.assertRaises(httptools.HttpParserInvalidURLError):
             p.feed_data(b'POST  HTTP/1.2')
+
+    def test_parser_request_4(self):
+        p = httptools.HttpRequestParser(None)
+        with self.assertRaisesRegex(TypeError, 'a bytes-like object'):
+            p.feed_data('POST  HTTP/1.2')
 
 
 class TestUrlParser(unittest.TestCase):
