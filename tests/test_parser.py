@@ -46,6 +46,18 @@ Transfer-Encoding: chunked
 b\r\n+\xce\xcfM\xb5MI,I\x04\x00\r\n0\r\n\r\n'''
 
 
+UPGRADE_REQUEST1 = b'''GET /demo HTTP/1.1
+Host: example.com
+Connection: Upgrade
+Sec-WebSocket-Key2: 12998 5 Y3 1  .P00
+Sec-WebSocket-Protocol: sample
+Upgrade: WebSocket
+Sec-WebSocket-Key1: 4 @1  46546xW%0l 1 5
+Origin: http://example.com
+
+Hot diggity dogg'''
+
+
 class TestResponseParser(unittest.TestCase):
 
     def test_parser_response_1(self):
@@ -198,6 +210,32 @@ class TestRequestParser(unittest.TestCase):
         m.on_chunk_complete.assert_called_with()
 
         self.assertTrue(m.on_message_complete.called)
+
+    def test_parser_request_upgrade_1(self):
+        m = mock.Mock()
+
+        headers = {}
+        m.on_header.side_effect = headers.__setitem__
+
+        p = httptools.HttpRequestParser(m)
+
+        try:
+            p.feed_data(UPGRADE_REQUEST1)
+        except httptools.HttpParserUpgrade as ex:
+            offset = ex.args[0]
+        else:
+            self.fail('HttpParserUpgrade was not raised')
+
+        self.assertEqual(UPGRADE_REQUEST1[offset:], b'Hot diggity dogg')
+
+        self.assertEqual(headers, {
+            b'Sec-WebSocket-Key2': b'12998 5 Y3 1  .P00',
+            b'Sec-WebSocket-Key1': b'4 @1  46546xW%0l 1 5',
+            b'Connection': b'Upgrade',
+            b'Origin': b'http://example.com',
+            b'Sec-WebSocket-Protocol': b'sample',
+            b'Host': b'example.com',
+            b'Upgrade': b'WebSocket'})
 
     def test_parser_request_2(self):
         p = httptools.HttpRequestParser(None)

@@ -23,6 +23,7 @@ class HttpRequestParser:
         protocol -- a Python object with the following methods
         (all optional):
 
+          - on_message_begin()
           - on_header(name: bytes, value: bytes)
           - on_headers_complete()
           - on_body(body: bytes)
@@ -42,6 +43,10 @@ class HttpRequestParser:
 
         Will eventually trigger callbacks on the ``protocol``
         object.
+
+        On HTTP upgrade, this method will raise an
+        ``HttpParserUpgrade`` exception, with its sole argument
+        set to the offset of the non-HTTP data in ``data``.
         """
 
     def get_method(self) -> str:

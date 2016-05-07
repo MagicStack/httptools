@@ -2,7 +2,8 @@ __all__ = ('HttpParserError',
            'HttpParserCallbackError',
            'HttpParserInvalidStatusError',
            'HttpParserInvalidMethodError',
-           'HttpParserInvalidURLError')
+           'HttpParserInvalidURLError',
+           'HttpParserUpgrade')
 
 
 class HttpParserError(Exception):
@@ -22,4 +23,8 @@ class HttpParserInvalidMethodError(HttpParserError):
 
 
 class HttpParserInvalidURLError(HttpParserError):
+    pass
+
+
+class HttpParserUpgrade(Exception):
     pass

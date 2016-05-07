@@ -9,7 +9,8 @@ from .errors import (HttpParserError,
                      HttpParserCallbackError,
                      HttpParserInvalidStatusError,
                      HttpParserInvalidMethodError,
-                     HttpParserInvalidURLError)
+                     HttpParserInvalidURLError,
+                     HttpParserUpgrade)
 
 cimport cython
 from . cimport cparser
@@ -155,6 +156,9 @@ cdef class HttpParser:
             data_len)
 
         PyBuffer_Release(&self.py_buf)
+
+        if self._cparser.upgrade:
+            raise HttpParserUpgrade(nb)
 
         # TODO: Handle parser->upgrade
 
