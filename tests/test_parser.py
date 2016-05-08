@@ -57,6 +57,16 @@ Origin: http://example.com
 
 Hot diggity dogg'''
 
+UPGRADE_RESPONSE1 = b'''HTTP/1.1 101 Switching Protocols
+UPGRADE: websocket
+SEC-WEBSOCKET-ACCEPT: rVg+XakFNFOxk3ZH0lzrZBmg0aU=
+TRANSFER-ENCODING: chunked
+CONNECTION: upgrade
+DATE: Sat, 07 May 2016 23:44:32 GMT
+SERVER: Python/3.4 aiohttp/1.0.3
+
+data'''.replace(b'\n', b'\r\n')
+
 
 class TestResponseParser(unittest.TestCase):
 
@@ -67,7 +77,7 @@ class TestResponseParser(unittest.TestCase):
         m.on_header.side_effect = headers.__setitem__
 
         p = httptools.HttpResponseParser(m)
-        p.feed_data(RESPONSE1_HEAD)
+        p.feed_data(memoryview(RESPONSE1_HEAD))
 
         self.assertEqual(p.get_http_version(), '1.1')
         self.assertEqual(p.get_status_code(), 200)
@@ -92,9 +102,8 @@ class TestResponseParser(unittest.TestCase):
         self.assertFalse(m.on_chunk_complete.called)
 
         with self.assertRaisesRegex(
-            httptools.HttpParserError,
-            'data received after completed connection'):
-
+                httptools.HttpParserError,
+                'data received after completed connection'):
             p.feed_data(b'12123123')
 
     def test_parser_response_2(self):
@@ -133,6 +142,78 @@ class TestResponseParser(unittest.TestCase):
         p = httptools.HttpResponseParser(m)
         p.feed_data(RESPONSE1_HEAD)
         p.feed_data(RESPONSE1_BODY)
+
+        m.on_message_complete.assert_called_once_with()
+
+    def test_parser_response_cb_on_status_1(self):
+        class Error(Exception):
+            pass
+
+        m = mock.Mock()
+        m.on_status.side_effect = Error()
+
+        p = httptools.HttpResponseParser(m)
+        try:
+            p.feed_data(RESPONSE1_HEAD + RESPONSE1_BODY)
+        except httptools.HttpParserCallbackError as ex:
+            self.assertIsInstance(ex.__context__, Error)
+        else:
+            self.fail('HttpParserCallbackError was not raised')
+
+    def test_parser_response_cb_on_body_1(self):
+        class Error(Exception):
+            pass
+
+        m = mock.Mock()
+        m.on_body.side_effect = Error()
+
+        p = httptools.HttpResponseParser(m)
+        try:
+            p.feed_data(RESPONSE1_HEAD + RESPONSE1_BODY)
+        except httptools.HttpParserCallbackError as ex:
+            self.assertIsInstance(ex.__context__, Error)
+        else:
+            self.fail('HttpParserCallbackError was not raised')
+
+    def test_parser_response_cb_on_message_complete_1(self):
+        class Error(Exception):
+            pass
+
+        m = mock.Mock()
+        m.on_message_complete.side_effect = Error()
+
+        p = httptools.HttpResponseParser(m)
+        try:
+            p.feed_data(RESPONSE1_HEAD + RESPONSE1_BODY)
+        except httptools.HttpParserCallbackError as ex:
+            self.assertIsInstance(ex.__context__, Error)
+        else:
+            self.fail('HttpParserCallbackError was not raised')
+
+    def test_parser_upgrade_response_1(self):
+        m = mock.Mock()
+
+        headers = {}
+        m.on_header.side_effect = headers.__setitem__
+
+        p = httptools.HttpResponseParser(m)
+        try:
+            p.feed_data(UPGRADE_RESPONSE1)
+        except httptools.HttpParserUpgrade as ex:
+            offset = ex.args[0]
+        else:
+            self.fail('HttpParserUpgrade was not raised')
+
+        self.assertEqual(UPGRADE_RESPONSE1[offset:], b'data')
+
+        self.assertEqual(p.get_http_version(), '1.1')
+        self.assertEqual(p.get_status_code(), 101)
+
+        m.on_status.assert_called_once_with(b'Switching Protocols')
+
+        m.on_headers_complete.assert_called_once_with()
+        self.assertEqual(m.on_header.call_count, 6)
+        self.assertEqual(len(headers), 6)
 
         m.on_message_complete.assert_called_once_with()
 
@@ -194,6 +275,36 @@ class TestRequestParser(unittest.TestCase):
              b'Host': b'bar',
              b'Vary': b'*'})
 
+    def test_parser_request_chunked_cb_error_1(self):
+        class Error(Exception):
+            pass
+
+        m = mock.Mock()
+        m.on_chunk_header.side_effect = Error()
+
+        p = httptools.HttpRequestParser(m)
+        try:
+            p.feed_data(CHUNKED_REQUEST1_1)
+        except httptools.HttpParserCallbackError as ex:
+            self.assertIsInstance(ex.__context__, Error)
+        else:
+            self.fail('HttpParserCallbackError was not raised')
+
+    def test_parser_request_chunked_cb_error_2(self):
+        class Error(Exception):
+            pass
+
+        m = mock.Mock()
+        m.on_chunk_complete.side_effect = Error()
+
+        p = httptools.HttpRequestParser(m)
+        try:
+            p.feed_data(CHUNKED_REQUEST1_1)
+        except httptools.HttpParserCallbackError as ex:
+            self.assertIsInstance(ex.__context__, Error)
+        else:
+            self.fail('HttpParserCallbackError was not raised')
+
     def test_parser_request_chunked_3(self):
         m = mock.Mock()
         p = httptools.HttpRequestParser(m)
@@ -236,6 +347,62 @@ class TestRequestParser(unittest.TestCase):
             b'Sec-WebSocket-Protocol': b'sample',
             b'Host': b'example.com',
             b'Upgrade': b'WebSocket'})
+
+    def test_parser_request_error_in_on_header(self):
+        class Error(Exception):
+            pass
+        m = mock.Mock()
+        m.on_header.side_effect = Error()
+        p = httptools.HttpRequestParser(m)
+
+        try:
+            p.feed_data(UPGRADE_REQUEST1)
+        except httptools.HttpParserCallbackError as ex:
+            self.assertIsInstance(ex.__context__, Error)
+        else:
+            self.fail('HttpParserCallbackError was not raised')
+
+    def test_parser_request_error_in_on_message_begin(self):
+        class Error(Exception):
+            pass
+        m = mock.Mock()
+        m.on_message_begin.side_effect = Error()
+        p = httptools.HttpRequestParser(m)
+
+        try:
+            p.feed_data(UPGRADE_REQUEST1)
+        except httptools.HttpParserCallbackError as ex:
+            self.assertIsInstance(ex.__context__, Error)
+        else:
+            self.fail('HttpParserCallbackError was not raised')
+
+    def test_parser_request_error_in_cb_on_url(self):
+        class Error(Exception):
+            pass
+        m = mock.Mock()
+        m.on_url.side_effect = Error()
+        p = httptools.HttpRequestParser(m)
+
+        try:
+            p.feed_data(UPGRADE_REQUEST1)
+        except httptools.HttpParserCallbackError as ex:
+            self.assertIsInstance(ex.__context__, Error)
+        else:
+            self.fail('HttpParserCallbackError was not raised')
+
+    def test_parser_request_error_in_cb_on_headers_complete(self):
+        class Error(Exception):
+            pass
+        m = mock.Mock()
+        m.on_headers_complete.side_effect = Error()
+        p = httptools.HttpRequestParser(m)
+
+        try:
+            p.feed_data(UPGRADE_REQUEST1)
+        except httptools.HttpParserCallbackError as ex:
+            self.assertIsInstance(ex.__context__, Error)
+        else:
+            self.fail('HttpParserCallbackError was not raised')
 
     def test_parser_request_2(self):
         p = httptools.HttpRequestParser(None)

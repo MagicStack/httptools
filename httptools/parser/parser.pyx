@@ -34,6 +34,8 @@ cdef class HttpParser:
         _proto_on_message_complete, _proto_on_chunk_header, \
         _proto_on_chunk_complete, _proto_on_message_begin
 
+        object _last_error
+
         Py_buffer py_buf
 
     def __cinit__(self):
@@ -89,6 +91,8 @@ cdef class HttpParser:
         self._proto_on_chunk_complete = getattr(
             protocol, 'on_chunk_complete', None)
         self._csettings.on_chunk_complete = cb_on_chunk_complete
+
+        self._last_error = None
 
     cdef _maybe_call_on_header(self):
         if self._current_header_name is not None:
@@ -157,14 +161,18 @@ cdef class HttpParser:
 
         PyBuffer_Release(&self.py_buf)
 
+        if self._cparser.http_errno != cparser.HPE_OK:
+            ex =  parser_error_from_errno(
+                <cparser.http_errno> self._cparser.http_errno)
+            if isinstance(ex, HttpParserCallbackError):
+                if self._last_error is not None:
+                    ex.__context__ = self._last_error
+                    self._last_error = None
+            raise ex
+
         if self._cparser.upgrade:
             raise HttpParserUpgrade(nb)
 
-        # TODO: Handle parser->upgrade
-
-        if self._cparser.http_errno != cparser.HPE_OK:
-            raise parser_error_from_errno(
-                <cparser.http_errno> self._cparser.http_errno)
         if nb != data_len:
             raise HttpParserError('not all of the data was parsed')
 
@@ -199,57 +207,120 @@ cdef class HttpResponseParser(HttpParser):
 
 cdef int cb_on_message_begin(cparser.http_parser* parser) except -1:
     cdef HttpParser pyparser = <HttpParser>parser.data
-    pyparser._proto_on_message_begin()
+    try:
+        pyparser._proto_on_message_begin()
+    except BaseException as ex:
+        pyparser._last_error = ex
+        return -1
+    else:
+        return 0
 
 
 cdef int cb_on_url(cparser.http_parser* parser,
                    const char *at, size_t length) except -1:
     cdef HttpParser pyparser = <HttpParser>parser.data
-    pyparser._proto_on_url(at[:length])
+    try:
+        pyparser._proto_on_url(at[:length])
+    except BaseException as ex:
+        pyparser._last_error = ex
+        return -1
+    else:
+        return 0
 
 
 cdef int cb_on_status(cparser.http_parser* parser,
                       const char *at, size_t length) except -1:
     cdef HttpParser pyparser = <HttpParser>parser.data
-    pyparser._proto_on_status(at[:length])
+    try:
+        pyparser._proto_on_status(at[:length])
+    except BaseException as ex:
+        pyparser._last_error = ex
+        return -1
+    else:
+        return 0
 
 
 cdef int cb_on_header_field(cparser.http_parser* parser,
                             const char *at, size_t length) except -1:
     cdef HttpParser pyparser = <HttpParser>parser.data
-    pyparser._on_header_field(at[:length])
+    try:
+        pyparser._on_header_field(at[:length])
+    except BaseException as ex:
+        pyparser._last_error = ex
+        return -1
+    else:
+        return 0
 
 
 cdef int cb_on_header_value(cparser.http_parser* parser,
                             const char *at, size_t length) except -1:
     cdef HttpParser pyparser = <HttpParser>parser.data
-    pyparser._on_header_value(at[:length])
+    try:
+        pyparser._on_header_value(at[:length])
+    except BaseException as ex:
+        pyparser._last_error = ex
+        return -1
+    else:
+        return 0
 
 
 cdef int cb_on_headers_complete(cparser.http_parser* parser) except -1:
     cdef HttpParser pyparser = <HttpParser>parser.data
-    pyparser._on_headers_complete()
+    try:
+        pyparser._on_headers_complete()
+    except BaseException as ex:
+        pyparser._last_error = ex
+        return -1
+    else:
+        if pyparser._cparser.upgrade:
+            return 1
+        else:
+            return 0
 
 
 cdef int cb_on_body(cparser.http_parser* parser,
                     const char *at, size_t length) except -1:
     cdef HttpParser pyparser = <HttpParser>parser.data
-    pyparser._proto_on_body(at[:length])
+    try:
+        pyparser._proto_on_body(at[:length])
+    except BaseException as ex:
+        pyparser._last_error = ex
+        return -1
+    else:
+        return 0
 
 
 cdef int cb_on_message_complete(cparser.http_parser* parser) except -1:
     cdef HttpParser pyparser = <HttpParser>parser.data
-    pyparser._proto_on_message_complete()
+    try:
+        pyparser._proto_on_message_complete()
+    except BaseException as ex:
+        pyparser._last_error = ex
+        return -1
+    else:
+        return 0
 
 
 cdef int cb_on_chunk_header(cparser.http_parser* parser) except -1:
     cdef HttpParser pyparser = <HttpParser>parser.data
-    pyparser._on_chunk_header()
+    try:
+        pyparser._on_chunk_header()
+    except BaseException as ex:
+        pyparser._last_error = ex
+        return -1
+    else:
+        return 0
 
 
 cdef int cb_on_chunk_complete(cparser.http_parser* parser) except -1:
     cdef HttpParser pyparser = <HttpParser>parser.data
-    pyparser._on_chunk_complete()
+    try:
+        pyparser._on_chunk_complete()
+    except BaseException as ex:
+        pyparser._last_error = ex
+        return -1
+    else:
+        return 0
 
 
 cdef parser_error_from_errno(cparser.http_errno errno):
