@@ -49,7 +49,7 @@ class HttpRequestParser:
         set to the offset of the non-HTTP data in ``data``.
         """
 
-    def get_method(self) -> str:
+    def get_method(self) -> bytes:
         """Return HTTP request method (GET, HEAD, etc)"""
 
 
