@@ -79,7 +79,7 @@ class TestResponseParser(unittest.TestCase):
         p = httptools.HttpResponseParser(m)
         p.feed_data(memoryview(RESPONSE1_HEAD))
 
-        self.assertEqual(p.get_http_version(), '1.1')
+        self.assertEqual(p.get_http_version(), b'1.1')
         self.assertEqual(p.get_status_code(), 200)
 
         m.on_status.assert_called_once_with(b'OK')
@@ -206,7 +206,7 @@ class TestResponseParser(unittest.TestCase):
 
         self.assertEqual(UPGRADE_RESPONSE1[offset:], b'data')
 
-        self.assertEqual(p.get_http_version(), '1.1')
+        self.assertEqual(p.get_http_version(), b'1.1')
         self.assertEqual(p.get_status_code(), 101)
 
         m.on_status.assert_called_once_with(b'Switching Protocols')
@@ -231,7 +231,7 @@ class TestRequestParser(unittest.TestCase):
         m.on_message_begin.assert_called_once_with()
 
         m.on_url.assert_called_once_with(b'/test.php?a=b+c')
-        self.assertEqual(p.get_http_version(), '1.2')
+        self.assertEqual(p.get_http_version(), b'1.2')
 
         m.on_header.assert_called_with(b'Transfer-Encoding', b'chunked')
         m.on_chunk_header.assert_called_with()
@@ -314,7 +314,7 @@ class TestRequestParser(unittest.TestCase):
         self.assertEqual(p.get_method(), b'POST')
 
         m.on_url.assert_called_once_with(b'/test.php?a=b+c')
-        self.assertEqual(p.get_http_version(), '1.2')
+        self.assertEqual(p.get_http_version(), b'1.2')
 
         m.on_header.assert_called_with(b'Transfer-Encoding', b'chunked')
         m.on_chunk_header.assert_called_with()
