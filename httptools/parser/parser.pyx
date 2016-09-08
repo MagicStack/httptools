@@ -140,10 +140,10 @@ cdef class HttpParser:
 
     def get_http_version(self):
         cdef cparser.http_parser* parser = self._cparser
-        return '{}.{}'.format(parser.http_major, parser.http_minor)
+        return b'%d.%d' % (parser.http_major, parser.http_minor)
 
     def should_keep_alive(self):
-        return bool(cparser.http_should_keep_alive(self._cparser))
+        return cparser.http_should_keep_alive(self._cparser) != 0
 
     def feed_data(self, data):
         cdef:
