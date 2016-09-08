@@ -32,7 +32,7 @@ class HttpRequestParser:
           - on_chunk_complete()
         """
 
-    def get_http_version(self) -> str:
+    def get_http_version(self) -> bytes:
         """Return an HTTP protocol version."""
 
     def should_keep_alive(self) -> bool:
