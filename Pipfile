@@ -1,0 +1,16 @@
+[[source]]
+
+url = "https://pypi.doubanio.com/simple/"
+verify_ssl = true
+name = "pypi"
+
+
+[packages]
+
+
+
+[dev-packages]
+cython = "*"
+pytest = "*"
+
+
