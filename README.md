@@ -24,6 +24,7 @@ class HttpRequestParser:
         (all optional):
 
           - on_message_begin()
+          - on_url(url: bytes)
           - on_header(name: bytes, value: bytes)
           - on_headers_complete()
           - on_body(body: bytes)
