@@ -419,6 +419,41 @@ class TestRequestParser(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, 'a bytes-like object'):
             p.feed_data('POST  HTTP/1.2')
 
+    def test_parser_request_fragmented(self):
+        m = mock.Mock()
+        headers = {}
+        m.on_header.side_effect = headers.__setitem__
+        p = httptools.HttpRequestParser(m)
+
+        REQUEST = (
+            b'PUT / HTTP/1.1\r\nHost: localhost:1234\r\nContent-Type: text/pl',
+            b'ain; charset=utf-8\r\nX-Empty-Header: \r\nConnection: close\r\n',
+            b'Content-Length: 10\r\n\r\n1234567890',
+        )
+
+        p.feed_data(REQUEST[0])
+
+        m.on_message_begin.assert_called_once_with()
+        m.on_url.assert_called_once_with(b'/')
+        self.assertEqual(headers, {b'Host': b'localhost:1234'})
+
+        p.feed_data(REQUEST[1])
+        self.assertEqual(
+            headers,
+            {b'Host': b'localhost:1234',
+             b'Content-Type': b'text/plain; charset=utf-8',
+             b'X-Empty-Header': b''})
+
+        p.feed_data(REQUEST[2])
+        self.assertEqual(
+            headers,
+            {b'Host': b'localhost:1234',
+             b'Content-Type': b'text/plain; charset=utf-8',
+             b'X-Empty-Header': b'',
+             b'Connection': b'close',
+             b'Content-Length': b'10'})
+        m.on_message_complete.assert_called_once_with()
+
 
 class TestUrlParser(unittest.TestCase):
 
