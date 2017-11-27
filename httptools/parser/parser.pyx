@@ -95,7 +95,7 @@ cdef class HttpParser:
         self._last_error = None
 
     cdef _maybe_call_on_header(self):
-        if self._current_header_name is not None:
+        if self._current_header_value is not None:
             current_header_name = self._current_header_name
             current_header_value = self._current_header_value
 
@@ -107,7 +107,10 @@ cdef class HttpParser:
 
     cdef _on_header_field(self, bytes field):
         self._maybe_call_on_header()
-        self._current_header_name = field
+        if self._current_header_name is None:
+            self._current_header_name = field
+        else:
+            self._current_header_name += field
 
     cdef _on_header_value(self, bytes val):
         if self._current_header_value is None:
