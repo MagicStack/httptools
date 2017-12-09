@@ -5,6 +5,9 @@ from cpython.mem cimport PyMem_Malloc, PyMem_Free
 from cpython cimport PyObject_GetBuffer, PyBuffer_Release, PyBUF_SIMPLE, \
                      Py_buffer, PyBytes_AsString
 
+from .python cimport PyMemoryView_Check, PyMemoryView_GET_BUFFER
+
+
 from .errors import (HttpParserError,
                      HttpParserCallbackError,
                      HttpParserInvalidStatusError,
@@ -149,17 +152,29 @@ cdef class HttpParser:
         cdef:
             size_t data_len
             size_t nb
+            Py_buffer *buf
 
-        PyObject_GetBuffer(data, &self.py_buf, PyBUF_SIMPLE)
-        data_len = <size_t>self.py_buf.len
+        if PyMemoryView_Check(data):
+            buf = PyMemoryView_GET_BUFFER(data)
+            data_len = <size_t>buf.len
+            nb = cparser.http_parser_execute(
+                self._cparser,
+                self._csettings,
+                <char*>buf.buf,
+                data_len)
 
-        nb = cparser.http_parser_execute(
-            self._cparser,
-            self._csettings,
-            <char*>self.py_buf.buf,
-            data_len)
+        else:
+            buf = &self.py_buf
+            PyObject_GetBuffer(data, buf, PyBUF_SIMPLE)
+            data_len = <size_t>buf.len
 
-        PyBuffer_Release(&self.py_buf)
+            nb = cparser.http_parser_execute(
+                self._cparser,
+                self._csettings,
+                <char*>buf.buf,
+                data_len)
+
+            PyBuffer_Release(buf)
 
         if self._cparser.http_errno != cparser.HPE_OK:
             ex =  parser_error_from_errno(
