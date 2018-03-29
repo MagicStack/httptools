@@ -349,20 +349,24 @@ class TestRequestParser(unittest.TestCase):
             b'Upgrade': b'WebSocket'})
 
     def test_parser_request_upgrade_flag(self):
-        m = mock.Mock()
-        p = httptools.HttpRequestParser(m)
 
-        def on_headers_complete():
-            self.assertEqual(p.should_upgrade(), False)
+        class Protocol:
 
-        def on_message_complete():
-            self.assertEqual(p.should_upgrade(), True)
+            def __init__(self):
+                self.parser = httptools.HttpRequestParser(self)
+            
+            def on_url(self, url):
+                assert self.parser.should_upgrade() is False
 
-        m.on_headers_complete = on_headers_complete
-        m.on_message_complete = on_message_complete
-    
+            def on_headers_complete(self):
+                assert self.parser.should_upgrade() is True
+
+            def on_message_complete(self):
+                assert self.parser.should_upgrade() is True
+
+        protocol = Protocol()
         try:
-            p.feed_data(UPGRADE_REQUEST1)
+            protocol.parser.feed_data(UPGRADE_REQUEST1)
         except httptools.HttpParserUpgrade as ex:
             offset = ex.args[0]
         else:
