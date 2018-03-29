@@ -39,6 +39,12 @@ class HttpRequestParser:
     def should_keep_alive(self) -> bool:
         """Return ``True`` if keep-alive mode is preferred."""
 
+    def should_upgrade(self) -> bool:
+        """Return ``True`` if the parsed request is a valid Upgrade request.
+	The method exposes a flag set just before on_headers_complete.
+	Calling this method earlier will only yield `False`.
+	"""
+
     def feed_data(self, data: bytes):
         """Feed data to the parser.
 
