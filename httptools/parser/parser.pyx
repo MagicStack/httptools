@@ -151,6 +151,9 @@ cdef class HttpParser:
     def should_keep_alive(self):
         return bool(cparser.http_should_keep_alive(self._cparser))
 
+    def should_upgrade(self):
+        return bool(self._cparser.upgrade)
+
     def feed_data(self, data):
         cdef:
             size_t data_len

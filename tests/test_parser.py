@@ -348,6 +348,26 @@ class TestRequestParser(unittest.TestCase):
             b'Host': b'example.com',
             b'Upgrade': b'WebSocket'})
 
+    def test_parser_request_upgrade_flag(self):
+        m = mock.Mock()
+        p = httptools.HttpRequestParser(m)
+
+        def on_headers_complete():
+            self.assertEqual(p.should_upgrade(), False)
+
+        def on_message_complete():
+            self.assertEqual(p.should_upgrade(), True)
+
+        m.on_headers_complete = on_headers_complete
+        m.on_message_complete = on_message_complete
+    
+        try:
+            p.feed_data(UPGRADE_REQUEST1)
+        except httptools.HttpParserUpgrade as ex:
+            offset = ex.args[0]
+        else:
+            self.fail('HttpParserUpgrade was not raised')
+        
     def test_parser_request_error_in_on_header(self):
         class Error(Exception):
             pass
