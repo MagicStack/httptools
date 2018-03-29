@@ -367,11 +367,12 @@ class TestRequestParser(unittest.TestCase):
         protocol = Protocol()
         try:
             protocol.parser.feed_data(UPGRADE_REQUEST1)
-        except httptools.HttpParserUpgrade as ex:
-            offset = ex.args[0]
+        except httptools.HttpParserUpgrade:
+            # Raise as usual.
+            pass
         else:
             self.fail('HttpParserUpgrade was not raised')
-        
+
     def test_parser_request_error_in_on_header(self):
         class Error(Exception):
             pass
