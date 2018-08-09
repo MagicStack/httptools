@@ -1,10 +1,15 @@
 from setuptools import setup, Extension
 
+with open('README.md') as f:
+    long_description = f.read()
 
 setup(
     name='httptools',
     version='0.0.11',
     description='A collection of framework independent HTTP protocol utils.',
+    long_description=long_description,
+    long_description_content_type='text/markdown',
+    url='https://github.com/MagicStack/httptools',
     classifiers=[
         'License :: OSI Approved :: MIT License',
         'Intended Audience :: Developers',
