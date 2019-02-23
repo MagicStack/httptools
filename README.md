@@ -31,6 +31,7 @@ class HttpRequestParser:
           - on_message_complete()
           - on_chunk_header()
           - on_chunk_complete()
+          - on_status(status: bytes)
         """
 
     def get_http_version(self) -> str:
