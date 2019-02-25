@@ -5,7 +5,7 @@ with open('README.md') as f:
 
 setup(
     name='httptools',
-    version='0.0.12',
+    version='0.0.13',
     description='A collection of framework independent HTTP protocol utils.',
     long_description=long_description,
     long_description_content_type='text/markdown',

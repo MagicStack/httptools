@@ -354,7 +354,7 @@ class TestRequestParser(unittest.TestCase):
 
             def __init__(self):
                 self.parser = httptools.HttpRequestParser(self)
-            
+
             def on_url(self, url):
                 assert self.parser.should_upgrade() is False
 
@@ -582,9 +582,8 @@ class TestUrlParser(unittest.TestCase):
             (None, None, None, b'/a/b/c', b'b=1&', None, None))
 
     def test_parser_url_2(self):
-        self.assertEqual(
-            self.parse(b''),
-            (None, None, None, None, None, None, None))
+        with self.assertRaises(httptools.HttpParserInvalidURLError):
+            self.parse(b'')
 
     def test_parser_url_3(self):
         with self.assertRaises(httptools.HttpParserInvalidURLError):
