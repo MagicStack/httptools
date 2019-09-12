@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/MagicStack/httptools.svg?branch=master)](https://travis-ci.org/MagicStack/httptools)
 
-httptools is a Python binding for nodejs HTTP parser.
+httptools is a Python binding for the nodejs HTTP parser.
 
 The package is available on PyPI: `pip install httptools`.
 
