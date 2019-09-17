@@ -26,4 +26,5 @@ __pycache__/
 /*.egg-info
 /dist
 /.pytest_cache
-
+/.mypy_cache
+/.vscode
