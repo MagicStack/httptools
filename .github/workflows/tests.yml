@@ -1,0 +1,39 @@
+name: PR Tests
+
+on:
+  push:
+    branches:
+      - master
+      - ci
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      max-parallel: 4
+      matrix:
+        python-version: [3.6, 3.7, 3.8]
+        os: [windows-latest, ubuntu-18.04, macos-latest]
+
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        fetch-depth: 50
+        submodules: true
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install Deps
+      run: |
+        pip install -U setuptools
+        pip install -r .github/workflows/tests-reqs.txt
+    - name: Test
+      # wdf needs to be killed or vcvarsall.bat will pick it up
+      # thinking it's the latest version of the Windows 10 SDK.
+      run: |
+        python setup.py build_ext --inplace
+        python setup.py test
