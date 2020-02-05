@@ -184,4 +184,9 @@ setup(
     include_package_data=True,
     test_suite='tests.suite',
     setup_requires=setup_requires,
+    extras_require={
+        'test': [
+            CYTHON_DEPENDENCY
+        ]
+    }
 )
