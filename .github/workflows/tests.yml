@@ -23,17 +23,32 @@ jobs:
       with:
         fetch-depth: 50
         submodules: true
+
+    - name: Check if release PR.
+      uses: edgedb/action-release/validate-pr@master
+      continue-on-error: true
+      id: release
+      with:
+        github_token: ${{ secrets.RELEASE_BOT_GITHUB_TOKEN }}
+        version_file: httptools/_version.py
+        version_line_pattern: |
+          __version__\s*=\s*(?:['"])([[:PEP440:]])(?:['"])
+
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v1
+      if: steps.release.outputs.version == 0
       with:
         python-version: ${{ matrix.python-version }}
+
     - name: Install Deps
+      if: steps.release.outputs.version == 0
       run: |
-        pip install -U setuptools
-        pip install -r .github/workflows/tests-reqs.txt
+        pip install --upgrade setuptools pip wheel
+        pip download --dest=/tmp/deps .[test]
+        pip install -U --no-index --find-links=/tmp/deps /tmp/deps/*
+
     - name: Test
-      # wdf needs to be killed or vcvarsall.bat will pick it up
-      # thinking it's the latest version of the Windows 10 SDK.
+      if: steps.release.outputs.version == 0
       run: |
         python setup.py build_ext --inplace
         python setup.py test
