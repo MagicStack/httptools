@@ -1,4 +1,4 @@
-![Tests](https://github.com/MagicStack/httptools/workflows/PR%20Tests/badge.svg)
+![Tests](https://github.com/MagicStack/httptools/workflows/Tests/badge.svg)
 
 httptools is a Python binding for the nodejs HTTP parser.
 
