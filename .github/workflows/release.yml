@@ -1,0 +1,169 @@
+name: Release
+
+on:
+  pull_request:
+    branches:
+      - "master"
+      - "ci"
+      - "[0-9]+.[0-9x]+*"
+    paths:
+      - "httptools/_version.py"
+
+jobs:
+  validate-release-request:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Validate release PR
+      uses: edgedb/action-release/validate-pr@master
+      id: checkver
+      with:
+        github_token: ${{ secrets.RELEASE_BOT_GITHUB_TOKEN }}
+        version_file: httptools/_version.py
+        version_line_pattern: |
+          __version__\s*=\s*(?:['"])([[:PEP440:]])(?:['"])
+
+    - name: Stop if not approved
+      if: steps.checkver.outputs.approved != 'true'
+      run: |
+        echo ::error::PR is not approved yet.
+        exit 1
+
+    - name: Store release version for later use
+      env:
+        VERSION: ${{ steps.checkver.outputs.version }}
+      run: |
+        mkdir -p dist/
+        echo "${VERSION}" > dist/VERSION
+
+    - uses: actions/upload-artifact@v1
+      with:
+        name: dist
+        path: dist/
+
+  build-sdist:
+    needs: validate-release-request
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        fetch-depth: 50
+        submodules: true
+
+    - name: Set up Python 3.7
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+
+    - name: Build source distribution
+      run: |
+        pip install -U setuptools wheel pip
+        python setup.py sdist
+
+    - uses: actions/upload-artifact@v1
+      with:
+        name: dist
+        path: dist/
+
+  build-wheels:
+    needs: validate-release-request
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        python-version: [3.6, 3.7, 3.8]
+        os: [ubuntu-16.04, macos-latest, windows-latest]
+
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        fetch-depth: 50
+        submodules: true
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install Python Deps
+      run: |
+        python -m pip install --upgrade setuptools pip wheel
+
+    - name: Build Wheels (linux)
+      if: startsWith(matrix.os, 'ubuntu')
+      uses: docker://quay.io/pypa/manylinux1_x86_64
+      env:
+        PYTHON_VERSION: ${{ matrix.python-version }}
+      with:
+        entrypoint: /github/workspace/.github/workflows/build-manylinux-wheels.sh
+
+    - name: Build Wheels (non-linux)
+      if: "!startsWith(matrix.os, 'ubuntu')"
+      run: |
+        make clean
+        python setup.py bdist_wheel
+
+    - name: Test Wheels
+      if: |
+        !startsWith(matrix.os, 'windows')
+        && !contains(github.event.pull_request.labels.*.name, 'skip wheel tests')
+      run: |
+        pip install --pre httptools -f "file:///${GITHUB_WORKSPACE}/dist"
+        make -C "${GITHUB_WORKSPACE}" testinstalled
+
+    - uses: actions/upload-artifact@v1
+      with:
+        name: dist
+        path: dist/
+
+  publish:
+    needs: [build-sdist, build-wheels]
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        fetch-depth: 5
+        submodules: false
+
+    - uses: actions/download-artifact@v1
+      with:
+        name: dist
+        path: dist/
+
+    - name: Extract Release Version
+      id: relver
+      run: |
+        set -e
+        echo ::set-output name=version::$(cat dist/VERSION)
+        rm dist/VERSION
+
+    - name: Merge and tag the PR
+      uses: edgedb/action-release/merge@master
+      with:
+        github_token: ${{ secrets.RELEASE_BOT_GITHUB_TOKEN }}
+        ssh_key: ${{ secrets.RELEASE_BOT_SSH_KEY }}
+        gpg_key: ${{ secrets.RELEASE_BOT_GPG_KEY }}
+        gpg_key_id: "5C468778062D87BF!"
+        tag_name: v${{ steps.relver.outputs.version }}
+
+    - name: Publish Github Release
+      uses: elprans/gh-action-create-release@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ steps.relver.outputs.version }}
+        release_name: v${{ steps.relver.outputs.version }}
+        target: ${{ github.event.pull_request.base.ref }}
+        body: ${{ github.event.pull_request.body }}
+        draft: true
+
+    - run: |
+        ls -al dist/
+
+    - name: Upload to PyPI
+      uses: pypa/gh-action-pypi-publish@master
+      with:
+        user: __token__
+        # password: ${{ secrets.PYPI_TOKEN }}
+        password: ${{ secrets.TEST_PYPI_TOKEN }}
+        repository_url: https://test.pypi.org/legacy/

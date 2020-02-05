@@ -1,4 +1,8 @@
-.PHONY: compile release test distclean
+.PHONY: compile release test distclean clean
+
+
+PYTHON ?= python3
+ROOT = $(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 
 
 compile:
@@ -12,8 +16,15 @@ release: compile test
 test:
 	python3 setup.py test
 
+clean:
+	find $(ROOT)/httptools/parser -name '*.c' | xargs rm -f
+	find $(ROOT)/httptools/parser -name '*.html' | xargs rm -f
 
 distclean:
-	git --git-dir="./vendor/http-parser/.git" clean -dfx
-	find ./httptools/parser -name '*.c' | xargs rm -f
-	find ./httptools/parser -name '*.html' | xargs rm -f
+	git --git-dir="$(ROOT)/vendor/http-parser/.git" clean -dfx
+	find $(ROOT)/httptools/parser -name '*.c' | xargs rm -f
+	find $(ROOT)/httptools/parser -name '*.html' | xargs rm -f
+
+
+testinstalled:
+	cd /tmp && $(PYTHON) $(ROOT)/tests/__init__.py

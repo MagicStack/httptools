@@ -1,16 +1,21 @@
-import os.path
 import sys
-
-from setuptools import setup, Extension
-from setuptools.command.build_ext import build_ext as build_ext
-
 
 vi = sys.version_info
 if vi < (3, 5):
     raise RuntimeError('httptools require Python 3.5 or greater')
+else:
+    import os.path
+    import pathlib
+
+    from setuptools import setup, Extension
+    from setuptools.command.build_ext import build_ext as build_ext
+
 
 CFLAGS = ['-O2']
-ROOT = os.path.dirname(__file__)
+
+ROOT = pathlib.Path(__file__).parent
+
+CYTHON_DEPENDENCY = 'Cython==0.29.14'
 
 
 class httptools_build_ext(build_ext):
@@ -123,7 +128,7 @@ with open(os.path.join(ROOT, 'README.md')) as f:
     long_description = f.read()
 
 
-with open(os.path.join(ROOT, 'httptools', '__init__.py')) as f:
+with open(os.path.join(ROOT, 'httptools', '_version.py')) as f:
     for line in f:
         if line.startswith('__version__ ='):
             _, _, version = line.partition('=')
@@ -131,7 +136,15 @@ with open(os.path.join(ROOT, 'httptools', '__init__.py')) as f:
             break
     else:
         raise RuntimeError(
-            'unable to read the version from httptools/__init__.py')
+            'unable to read the version from httptools/_version.py')
+
+
+setup_requires = []
+
+if (not (ROOT / 'httptools' / 'parser' / 'parser.c').exists() or
+        '--cython-always' in sys.argv):
+    # No Cython output, require Cython to build.
+    setup_requires.append(CYTHON_DEPENDENCY)
 
 
 setup(
@@ -150,7 +163,8 @@ setup(
         'Environment :: Web Environment',
         'Development Status :: 5 - Production/Stable',
     ],
-    platforms=['POSIX'],
+    platforms=['macOS', 'POSIX', 'Windows'],
+    zip_safe=False,
     author='Yury Selivanov',
     author_email='yury@magic.io',
     license='MIT',
@@ -167,7 +181,7 @@ setup(
             extra_compile_args=CFLAGS,
         ),
     ],
-    provides=['httptools'],
     include_package_data=True,
-    test_suite='tests.suite'
+    test_suite='tests.suite',
+    setup_requires=setup_requires,
 )
