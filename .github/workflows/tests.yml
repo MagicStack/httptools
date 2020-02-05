@@ -40,15 +40,8 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Install Deps
-      if: steps.release.outputs.version == 0
-      run: |
-        pip install --upgrade setuptools pip wheel
-        pip download --dest=/tmp/deps .[test]
-        pip install -U --no-index --find-links=/tmp/deps /tmp/deps/*
-
     - name: Test
       if: steps.release.outputs.version == 0
       run: |
-        python setup.py build_ext --inplace
+        pip install -e .[test]
         python setup.py test
