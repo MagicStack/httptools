@@ -124,11 +124,11 @@ class httptools_build_ext(build_ext):
         super().build_extensions()
 
 
-with open(ROOT.joinpath('README.md')) as f:
+with ROOT.joinpath('README.md').open() as f:
     long_description = f.read()
 
 
-with open(ROOT.joinpath('httptools', '_version.py')) as f:
+with ROOT.joinpath('httptools', '_version.py').open() as f:
     for line in f:
         if line.startswith('__version__ ='):
             _, _, version = line.partition('=')
