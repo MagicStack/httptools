@@ -70,8 +70,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: [3.6, 3.7, 3.8]
+        python-version: [3.5, 3.6, 3.7, 3.8]
         os: [ubuntu-16.04, macos-latest, windows-latest]
+        exclude:
+          # Python 3.5 is unable to properly
+          # find the recent VS tooling
+          # https://bugs.python.org/issue30389
+          - os: windows-latest
+            python-version: 3.5
 
     steps:
     - uses: actions/checkout@v1
