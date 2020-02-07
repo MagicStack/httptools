@@ -116,19 +116,18 @@ class httptools_build_ext(build_ext):
                 # Support macports on Mac OS X.
                 self.compiler.add_include_dir('/opt/local/include')
         else:
-            self.compiler.add_include_dir(
-                    os.path.join(ROOT, 'vendor/http-parser'))
+            self.compiler.add_include_dir(str(ROOT / 'vendor' / 'http-parser'))
             self.distribution.ext_modules[0].sources.append(
                 'vendor/http-parser/http_parser.c')
 
         super().build_extensions()
 
 
-with open(os.path.join(ROOT, 'README.md')) as f:
+with open(str(ROOT / 'README.md')) as f:
     long_description = f.read()
 
 
-with open(os.path.join(ROOT, 'httptools', '_version.py')) as f:
+with open(str(ROOT / 'httptools' / '_version.py')) as f:
     for line in f:
         if line.startswith('__version__ ='):
             _, _, version = line.partition('=')
