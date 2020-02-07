@@ -117,18 +117,18 @@ class httptools_build_ext(build_ext):
                 self.compiler.add_include_dir('/opt/local/include')
         else:
             self.compiler.add_include_dir(
-                    os.path.join(ROOT, 'vendor/http-parser'))
+                    ROOT.joinpath('vendor/http-parser'))
             self.distribution.ext_modules[0].sources.append(
                 'vendor/http-parser/http_parser.c')
 
         super().build_extensions()
 
 
-with open(os.path.join(ROOT, 'README.md')) as f:
+with open(ROOT.joinpath('README.md')) as f:
     long_description = f.read()
 
 
-with open(os.path.join(ROOT, 'httptools', '_version.py')) as f:
+with open(ROOT.joinpath('httptools', '_version.py')) as f:
     for line in f:
         if line.startswith('__version__ ='):
             _, _, version = line.partition('=')
