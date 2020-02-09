@@ -1,5 +1,4 @@
-from .parser import *
-from .errors import *
+from .parser import *  # NoQA
+from .errors import *  # NoQA
 
-
-__all__ = parser.__all__ + errors.__all__
+__all__ = parser.__all__ + errors.__all__  # NoQA
