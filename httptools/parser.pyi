@@ -1,3 +1,8 @@
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+	from httptools.parser.parser import URL
+
 class HttpRequestParser:
     def __init__(self, protocol):
         """HttpRequestParser
@@ -58,8 +63,7 @@ class HttpResponseParser:
         """Return the status code of the HTTP response"""
         pass
 
-
-def parse_url(url: bytes):
+def parse_url(url: bytes) -> "URL":
     """Parse URL strings into a structured Python object.
 
     Returns an instance of ``httptools.URL`` class with the
