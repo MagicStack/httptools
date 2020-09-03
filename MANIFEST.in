@@ -1,2 +1,2 @@
-recursive-include vendor *.c *.h LICENSE* README*
+recursive-include vendor *.c *.h LICENSE* README* *.pyi
 include MANIFEST.in LICENSE
