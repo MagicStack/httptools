@@ -180,7 +180,6 @@ setup(
             extra_compile_args=CFLAGS,
         ),
     ],
-    package_data={"": ["./httptools/parser.pyi"]},
     include_package_data=True,
     test_suite='tests.suite',
     setup_requires=setup_requires,
