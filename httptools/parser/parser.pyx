@@ -19,7 +19,7 @@ cimport cython
 from . cimport cparser
 
 
-__all__ = ('HttpRequestParser', 'HttpResponseParser', 'parse_url')
+__all__ = ('HttpRequestParser', 'HttpResponseParser', 'parse_url', "URL")
 
 
 @cython.internal
