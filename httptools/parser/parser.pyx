@@ -166,7 +166,6 @@ cdef class HttpParser:
             Py_buffer *buf
 
         if PyMemoryView_Check(data):
-            print(1)
             buf = PyMemoryView_GET_BUFFER(data)
             data_len = <size_t>buf.len
             nb = cparser.llhttp_execute(
@@ -175,28 +174,22 @@ cdef class HttpParser:
                 data_len)
 
         else:
-            print(2)
             buf = &self.py_buf
             PyObject_GetBuffer(data, buf, PyBUF_SIMPLE)
             data_len = <size_t>buf.len
 
-            print(3)
             nb = cparser.llhttp_execute(
                 self._cparser,
                 <char*>buf.buf,
                 data_len)
-            print(4)
 
             PyBuffer_Release(buf)
-
-        print("NB:", nb)
 
         if self._cparser.upgrade == 1 and nb == cparser.HPE_PAUSED_UPGRADE:
             cparser.llhttp_resume_after_upgrade(self._cparser)
             raise HttpParserUpgrade(data_len)
 
         if nb != cparser.HPE_OK:
-            print(5)
             ex = parser_error_from_errno(
                 <cparser.llhttp_errno_t> self._cparser.error)
             if isinstance(ex, HttpParserCallbackError):
@@ -310,7 +303,6 @@ cdef int cb_on_headers_complete(cparser.llhttp_t* parser) except -1:
 cdef int cb_on_body(cparser.llhttp_t* parser,
                     const char *at, size_t length) except -1:
     cdef HttpParser pyparser = <HttpParser>parser.data
-    print("Here")
     try:
         pyparser._proto_on_body(at[:length])
     except BaseException as ex:
@@ -354,8 +346,6 @@ cdef int cb_on_chunk_complete(cparser.llhttp_t* parser) except -1:
 
 
 cdef parser_error_from_errno(cparser.llhttp_errno_t errno):
-    print("Will get name")
-    print("Errno:", errno)
     cdef bytes name = cparser.llhttp_errno_name(errno)
 
     if errno in (cparser.HPE_CB_MESSAGE_BEGIN,
