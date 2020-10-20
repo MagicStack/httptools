@@ -30,3 +30,5 @@ __pycache__/
 /.mypy_cache
 /.vscode
 /node_modules
+.eggs
+.venv
