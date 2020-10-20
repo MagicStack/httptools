@@ -3,4 +3,4 @@
 	url = https://github.com/nodejs/http-parser.git
 [submodule "vendor/llhttp"]
 	path = vendor/llhttp
-	url = https://github.com/nodejs/llhttp/commit/e5c3017cca47736fea5747cfa59f9e2a7dfec866
+	url = https://github.com/nodejs/llhttp.git
