@@ -346,6 +346,9 @@ cdef int cb_on_chunk_complete(cparser.llhttp_t* parser) except -1:
 
 
 cdef parser_error_from_errno(cparser.llhttp_errno_t errno):
+    if errno > 23:
+        return HttpParserError('Unknown')
+
     cdef bytes name = cparser.llhttp_errno_name(errno)
 
     if errno in (cparser.HPE_CB_MESSAGE_BEGIN,
