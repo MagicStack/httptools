@@ -46,6 +46,17 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
+    - name: Set up Node
+      uses: actions/setup-node@v1
+      with:
+        node-version: '12'
+
+    - name: Build llhttp
+      run: |
+        cd vendor/llhttp
+        npm install
+        npm build
+
     - name: Test
       if: steps.release.outputs.version == 0
       run: |
