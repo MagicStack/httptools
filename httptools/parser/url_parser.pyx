@@ -10,7 +10,7 @@ from .errors import HttpParserInvalidURLError
 cimport cython
 from . cimport uparser
 
-__all__ = 'parse_url'
+__all__ = ('parse_url',)
 
 @cython.freelist(250)
 cdef class URL:

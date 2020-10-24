@@ -1,7 +1,9 @@
 from libc.stdint cimport uint16_t
 
+
 cdef extern from "../../vendor/http-parser/http_parser.h":
     # URL Parser
+
     enum http_parser_url_fields:
         UF_SCHEMA   = 0,
         UF_HOST     = 1,
