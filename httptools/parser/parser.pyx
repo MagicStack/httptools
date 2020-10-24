@@ -185,11 +185,13 @@ cdef class HttpParser:
             PyBuffer_Release(buf)
 
         if self._cparser.upgrade == 1 and nb == cparser.HPE_PAUSED_UPGRADE:
+            read_bytes = cparser.llhttp_get_error_pos(self._cparser)
             cparser.llhttp_resume_after_upgrade(self._cparser)
-            raise HttpParserUpgrade(data_len)
+            raise HttpParserUpgrade(read_bytes)
 
         if nb != cparser.HPE_OK:
             ex = parser_error_from_errno(
+                self._cparser,
                 <cparser.llhttp_errno_t> self._cparser.error)
             if isinstance(ex, HttpParserCallbackError):
                 if self._last_error is not None:
@@ -243,7 +245,7 @@ cdef int cb_on_url(cparser.llhttp_t* parser,
     try:
         pyparser._proto_on_url(at[:length])
     except BaseException as ex:
-        cparser.llhttp_set_error_reason(parser, "on url callback error")
+        cparser.llhttp_set_error_reason(parser, "`on_url` callback error")
         pyparser._last_error = ex
         return cparser.HPE_USER
     else:
@@ -256,7 +258,7 @@ cdef int cb_on_status(cparser.llhttp_t* parser,
     try:
         pyparser._proto_on_status(at[:length])
     except BaseException as ex:
-        cparser.llhttp_set_error_reason(parser, "on status callback error")
+        cparser.llhttp_set_error_reason(parser, "`on_status` callback error")
         pyparser._last_error = ex
         return cparser.HPE_USER
     else:
@@ -269,7 +271,7 @@ cdef int cb_on_header_field(cparser.llhttp_t* parser,
     try:
         pyparser._on_header_field(at[:length])
     except BaseException as ex:
-        cparser.llhttp_set_error_reason(parser, "on header field callback error")
+        cparser.llhttp_set_error_reason(parser, "`on_header_field` callback error")
         pyparser._last_error = ex
         return cparser.HPE_USER
     else:
@@ -282,7 +284,7 @@ cdef int cb_on_header_value(cparser.llhttp_t* parser,
     try:
         pyparser._on_header_value(at[:length])
     except BaseException as ex:
-        cparser.llhttp_set_error_reason(parser, "on header value callback error")
+        cparser.llhttp_set_error_reason(parser, "`on_header_value` callback error")
         pyparser._last_error = ex
         return cparser.HPE_USER
     else:
@@ -309,7 +311,7 @@ cdef int cb_on_body(cparser.llhttp_t* parser,
     try:
         pyparser._proto_on_body(at[:length])
     except BaseException as ex:
-        cparser.llhttp_set_error_reason(parser, "on body callback error")
+        cparser.llhttp_set_error_reason(parser, "`on_body` callback error")
         pyparser._last_error = ex
         return cparser.HPE_USER
     else:
@@ -349,8 +351,8 @@ cdef int cb_on_chunk_complete(cparser.llhttp_t* parser) except -1:
         return 0
 
 
-cdef parser_error_from_errno(cparser.llhttp_errno_t errno):
-    cdef bytes name = cparser.llhttp_errno_name(errno)
+cdef parser_error_from_errno(cparser.llhttp_t* parser, cparser.llhttp_errno_t errno):
+    cdef bytes reason = cparser.llhttp_get_error_reason(parser)
 
     if errno in (cparser.HPE_CB_MESSAGE_BEGIN,
                  cparser.HPE_CB_HEADERS_COMPLETE,
@@ -372,4 +374,4 @@ cdef parser_error_from_errno(cparser.llhttp_errno_t errno):
     else:
         cls = HttpParserError
 
-    return cls(name.decode('latin-1'))
+    return cls(reason.decode('latin-1'))

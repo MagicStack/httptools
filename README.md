@@ -100,7 +100,7 @@ def parse_url(url: bytes):
 
 5. Run `npm install` on `vendor/llhttp`
 
-6. Run `npm build` on `vendor/llhttp`
+6. Run `npm run-script build` on `vendor/llhttp`
 
 7. Run `make` and `make test`.
 

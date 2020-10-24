@@ -103,7 +103,7 @@ class TestResponseParser(unittest.TestCase):
 
         with self.assertRaisesRegex(
                 httptools.HttpParserError,
-                'HPE_INVALID_CONSTANT'):
+                'Expected HTTP/'):
             p.feed_data(b'12123123')
 
     def test_parser_response_2(self):
@@ -116,7 +116,8 @@ class TestResponseParser(unittest.TestCase):
 
         for cbname in callbacks:
             with self.subTest('{} callback fails correctly'.format(cbname)):
-                with self.assertRaises(httptools.HttpParserCallbackError):
+                with self.assertRaisesRegex(httptools.HttpParserCallbackError,
+                                            'callback error'):
 
                     m = mock.Mock()
                     getattr(m, cbname).side_effect = Exception()
@@ -199,11 +200,11 @@ class TestResponseParser(unittest.TestCase):
         try:
             p.feed_data(UPGRADE_RESPONSE1)
         except httptools.HttpParserUpgrade as ex:
-            offset = ex.args[0]
+            offset = len(ex.args[0])
         else:
             self.fail('HttpParserUpgrade was not raised')
 
-        # self.assertEqual(UPGRADE_RESPONSE1[offset:], b'data')
+        self.assertEqual(UPGRADE_RESPONSE1[-offset:], b'data')
 
         self.assertEqual(p.get_http_version(), '1.1')
         self.assertEqual(p.get_status_code(), 101)
@@ -331,11 +332,11 @@ class TestRequestParser(unittest.TestCase):
         try:
             p.feed_data(UPGRADE_REQUEST1)
         except httptools.HttpParserUpgrade as ex:
-            offset = ex.args[0]
+            offset = len(ex.args[0])
         else:
             self.fail('HttpParserUpgrade was not raised')
 
-        # self.assertEqual(UPGRADE_REQUEST1[offset:], b'Hot diggity dogg')
+        self.assertEqual(UPGRADE_REQUEST1[-offset:], b'Hot diggity dogg')
 
         self.assertEqual(headers, {
             b'Sec-WebSocket-Key2': b'12998 5 Y3 1  .P00',

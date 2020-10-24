@@ -149,7 +149,8 @@ cdef extern from "../../vendor/llhttp/build/llhttp.h":
 
     int llhttp_should_keep_alive(const llhttp_t* parser)
 
-    const char* llhttp_errno_name(llhttp_errno_t err)
+    const char* llhttp_get_error_pos(const llhttp_t* parser)
+    const char* llhttp_get_error_reason(const llhttp_t* parser)
     const char* llhttp_method_name(llhttp_method_t method)
 
     void llhttp_set_error_reason(llhttp_t* parser, const char* reason);
