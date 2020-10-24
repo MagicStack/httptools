@@ -171,10 +171,8 @@ class TestResponseParser(unittest.TestCase):
             p.feed_data(RESPONSE1_HEAD + RESPONSE1_BODY)
         except httptools.HttpParserCallbackError as ex:
             self.assertIsInstance(ex.__context__, Error)
-        except BaseException as e:
-            self.fail(f'HttpParserCallbackError was not raised: {str(e)}')
         else:
-            self.fail(f'HttpParserCallbackError was not raised: {str()}')
+            self.fail('HttpParserCallbackError was not raised')
 
     def test_parser_response_cb_on_message_complete_1(self):
         class Error(Exception):
