@@ -55,7 +55,7 @@ jobs:
       run: |
         cd vendor/llhttp
         npm install
-        npm build
+        npm run-script build
 
     - name: Test
       if: steps.release.outputs.version == 0
