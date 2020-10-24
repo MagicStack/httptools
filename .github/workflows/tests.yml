@@ -15,7 +15,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        python-version: [3.5, 3.6, 3.7, 3.8, 3.9]
+        python-version: [3.5, 3.6, 3.7, 3.8]
         os: [windows-latest, ubuntu-18.04, macos-latest]
         exclude:
           # Python 3.5 is unable to properly
@@ -45,17 +45,6 @@ jobs:
       if: steps.release.outputs.version == 0
       with:
         python-version: ${{ matrix.python-version }}
-
-    - name: Set up Node
-      uses: actions/setup-node@v1
-      with:
-        node-version: '12'
-
-    - name: Build llhttp
-      run: |
-        cd vendor/llhttp
-        npm install
-        npm run-script build
 
     - name: Test
       if: steps.release.outputs.version == 0

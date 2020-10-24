@@ -98,11 +98,7 @@ def parse_url(url: bytes):
 
 4. Install Cython with `pip install cython`
 
-5. Run `npm install` on `vendor/llhttp`
-
-6. Run `npm run-script build` on `vendor/llhttp`
-
-7. Run `make` and `make test`.
+5. Run `make` and `make test`.
 
 
 # License

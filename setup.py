@@ -116,15 +116,14 @@ class httptools_build_ext(build_ext):
                 # Support macports on Mac OS X.
                 self.compiler.add_include_dir('/opt/local/include')
         else:
-            self.compiler.add_include_dir(str(ROOT / 'vendor' / 'llhttp' / 'build'))
+            self.compiler.add_include_dir(str(ROOT / 'vendor' / 'llhttp' / 'include'))
+            self.compiler.add_include_dir(str(ROOT / 'vendor' / 'llhttp' / 'src'))
             self.distribution.ext_modules[0].sources.append(
-                'vendor/llhttp/build/c/llhttp.c')
-
-            self.compiler.add_include_dir(str(ROOT / 'vendor' / 'llhttp' / 'src' / 'native'))
+                'vendor/llhttp/src/api.c')
             self.distribution.ext_modules[0].sources.append(
-                'vendor/llhttp/src/native/api.c')
+                'vendor/llhttp/src/http.c')
             self.distribution.ext_modules[0].sources.append(
-                'vendor/llhttp/src/native/http.c')
+                'vendor/llhttp/src/llhttp.c')
 
             self.compiler.add_include_dir(str(ROOT / 'vendor' / 'http-parser'))
             self.distribution.ext_modules[1].sources.append(
