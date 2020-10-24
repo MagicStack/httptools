@@ -116,8 +116,7 @@ class TestResponseParser(unittest.TestCase):
 
         for cbname in callbacks:
             with self.subTest('{} callback fails correctly'.format(cbname)):
-                with self.assertRaisesRegex(httptools.HttpParserCallbackError,
-                                            'callback failed'):
+                with self.assertRaises(httptools.HttpParserCallbackError):
 
                     m = mock.Mock()
                     getattr(m, cbname).side_effect = Exception()
@@ -165,16 +164,17 @@ class TestResponseParser(unittest.TestCase):
             pass
 
         m = mock.Mock()
-        m.on_body.return_value = -1
-        # m.on_body.side_effect = Error()
+        m.on_body.side_effect = Error()
 
         p = httptools.HttpResponseParser(m)
         try:
             p.feed_data(RESPONSE1_HEAD + RESPONSE1_BODY)
         except httptools.HttpParserCallbackError as ex:
             self.assertIsInstance(ex.__context__, Error)
+        except BaseException as e:
+            self.fail(f'HttpParserCallbackError was not raised: {str(e)}')
         else:
-            self.fail('HttpParserCallbackError was not raised')
+            self.fail(f'HttpParserCallbackError was not raised: {str()}')
 
     def test_parser_response_cb_on_message_complete_1(self):
         class Error(Exception):
@@ -549,74 +549,74 @@ class TestRequestParser(unittest.TestCase):
              b'Content-Type': b'text/plain; charset=utf-8'})
 
 
-# class TestUrlParser(unittest.TestCase):
-#
-#     def parse(self, url:bytes):
-#         parsed = httptools.parse_url(url)
-#         return (parsed.schema, parsed.host, parsed.port, parsed.path,
-#                 parsed.query, parsed.fragment, parsed.userinfo)
-#
-#     def test_parser_url_1(self):
-#         self.assertEqual(
-#             self.parse(b'dsf://aaa/b/c?aa#123'),
-#             (b'dsf', b'aaa', None, b'/b/c', b'aa', b'123', None))
-#
-#         self.assertEqual(
-#             self.parse(b'dsf://i:n@aaa:88/b/c?aa#123'),
-#             (b'dsf', b'aaa', 88, b'/b/c', b'aa', b'123', b'i:n'))
-#
-#         self.assertEqual(
-#             self.parse(b'////'),
-#             (None, None, None, b'////', None, None, None))
-#
-#         self.assertEqual(
-#             self.parse(b'////1/1?a=b&c[]=d&c[]=z'),
-#             (None, None, None, b'////1/1', b'a=b&c[]=d&c[]=z', None, None))
-#
-#         self.assertEqual(
-#             self.parse(b'/////?#123'),
-#             (None, None, None, b'/////', None, b'123', None))
-#
-#         self.assertEqual(
-#             self.parse(b'/a/b/c?b=1&'),
-#             (None, None, None, b'/a/b/c', b'b=1&', None, None))
-#
-#     def test_parser_url_2(self):
-#         with self.assertRaises(httptools.HttpParserInvalidURLError):
-#             self.parse(b'')
-#
-#     def test_parser_url_3(self):
-#         with self.assertRaises(httptools.HttpParserInvalidURLError):
-#             self.parse(b' ')
-#
-#     def test_parser_url_4(self):
-#         with self.assertRaises(httptools.HttpParserInvalidURLError):
-#             self.parse(b':///1')
-#
-#     def test_parser_url_5(self):
-#         self.assertEqual(
-#             self.parse(b'http://[1:2::3:4]:67/'),
-#             (b'http', b'1:2::3:4', 67, b'/', None, None, None))
-#
-#     def test_parser_url_6(self):
-#         self.assertEqual(
-#             self.parse(bytearray(b'/')),
-#             (None, None, None, b'/', None, None, None))
-#
-#     def test_parser_url_7(self):
-#         url = httptools.parse_url(b'/')
-#         with self.assertRaisesRegex(AttributeError, 'not writable'):
-#             url.port = 0
-#
-#     def test_parser_url_8(self):
-#         with self.assertRaises(TypeError):
-#             httptools.parse_url(None)
-#
-#     def test_parser_url_9(self):
-#         with self.assertRaisesRegex(httptools.HttpParserInvalidURLError,
-#                                     r'a\\x00aa'):
-#             self.parse(b'dsf://a\x00aa')
-#
-#     def test_parser_url_10(self):
-#         with self.assertRaisesRegex(TypeError, 'a bytes-like object'):
-#             self.parse('dsf://aaa')
+class TestUrlParser(unittest.TestCase):
+
+    def parse(self, url:bytes):
+        parsed = httptools.parse_url(url)
+        return (parsed.schema, parsed.host, parsed.port, parsed.path,
+                parsed.query, parsed.fragment, parsed.userinfo)
+
+    def test_parser_url_1(self):
+        self.assertEqual(
+            self.parse(b'dsf://aaa/b/c?aa#123'),
+            (b'dsf', b'aaa', None, b'/b/c', b'aa', b'123', None))
+
+        self.assertEqual(
+            self.parse(b'dsf://i:n@aaa:88/b/c?aa#123'),
+            (b'dsf', b'aaa', 88, b'/b/c', b'aa', b'123', b'i:n'))
+
+        self.assertEqual(
+            self.parse(b'////'),
+            (None, None, None, b'////', None, None, None))
+
+        self.assertEqual(
+            self.parse(b'////1/1?a=b&c[]=d&c[]=z'),
+            (None, None, None, b'////1/1', b'a=b&c[]=d&c[]=z', None, None))
+
+        self.assertEqual(
+            self.parse(b'/////?#123'),
+            (None, None, None, b'/////', None, b'123', None))
+
+        self.assertEqual(
+            self.parse(b'/a/b/c?b=1&'),
+            (None, None, None, b'/a/b/c', b'b=1&', None, None))
+
+    def test_parser_url_2(self):
+        with self.assertRaises(httptools.HttpParserInvalidURLError):
+            self.parse(b'')
+
+    def test_parser_url_3(self):
+        with self.assertRaises(httptools.HttpParserInvalidURLError):
+            self.parse(b' ')
+
+    def test_parser_url_4(self):
+        with self.assertRaises(httptools.HttpParserInvalidURLError):
+            self.parse(b':///1')
+
+    def test_parser_url_5(self):
+        self.assertEqual(
+            self.parse(b'http://[1:2::3:4]:67/'),
+            (b'http', b'1:2::3:4', 67, b'/', None, None, None))
+
+    def test_parser_url_6(self):
+        self.assertEqual(
+            self.parse(bytearray(b'/')),
+            (None, None, None, b'/', None, None, None))
+
+    def test_parser_url_7(self):
+        url = httptools.parse_url(b'/')
+        with self.assertRaisesRegex(AttributeError, 'not writable'):
+            url.port = 0
+
+    def test_parser_url_8(self):
+        with self.assertRaises(TypeError):
+            httptools.parse_url(None)
+
+    def test_parser_url_9(self):
+        with self.assertRaisesRegex(httptools.HttpParserInvalidURLError,
+                                    r'a\\x00aa'):
+            self.parse(b'dsf://a\x00aa')
+
+    def test_parser_url_10(self):
+        with self.assertRaisesRegex(TypeError, 'a bytes-like object'):
+            self.parse('dsf://aaa')

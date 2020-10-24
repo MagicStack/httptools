@@ -19,7 +19,6 @@ cimport cython
 from . cimport cparser
 
 
-# __all__ = ('HttpRequestParser', 'HttpResponseParser', 'parse_url')
 __all__ = ('HttpRequestParser', 'HttpResponseParser')
 
 
@@ -244,8 +243,9 @@ cdef int cb_on_url(cparser.llhttp_t* parser,
     try:
         pyparser._proto_on_url(at[:length])
     except BaseException as ex:
+        cparser.llhttp_set_error_reason(parser, "on url callback error")
         pyparser._last_error = ex
-        return -1
+        return cparser.HPE_USER
     else:
         return 0
 
@@ -256,8 +256,9 @@ cdef int cb_on_status(cparser.llhttp_t* parser,
     try:
         pyparser._proto_on_status(at[:length])
     except BaseException as ex:
+        cparser.llhttp_set_error_reason(parser, "on status callback error")
         pyparser._last_error = ex
-        return -1
+        return cparser.HPE_USER
     else:
         return 0
 
@@ -268,8 +269,9 @@ cdef int cb_on_header_field(cparser.llhttp_t* parser,
     try:
         pyparser._on_header_field(at[:length])
     except BaseException as ex:
+        cparser.llhttp_set_error_reason(parser, "on header field callback error")
         pyparser._last_error = ex
-        return -1
+        return cparser.HPE_USER
     else:
         return 0
 
@@ -280,8 +282,9 @@ cdef int cb_on_header_value(cparser.llhttp_t* parser,
     try:
         pyparser._on_header_value(at[:length])
     except BaseException as ex:
+        cparser.llhttp_set_error_reason(parser, "on header value callback error")
         pyparser._last_error = ex
-        return -1
+        return cparser.HPE_USER
     else:
         return 0
 
@@ -306,8 +309,9 @@ cdef int cb_on_body(cparser.llhttp_t* parser,
     try:
         pyparser._proto_on_body(at[:length])
     except BaseException as ex:
+        cparser.llhttp_set_error_reason(parser, "on body callback error")
         pyparser._last_error = ex
-        return -1
+        return cparser.HPE_USER
     else:
         return 0
 
@@ -346,16 +350,14 @@ cdef int cb_on_chunk_complete(cparser.llhttp_t* parser) except -1:
 
 
 cdef parser_error_from_errno(cparser.llhttp_errno_t errno):
-    if errno > 23:
-        return HttpParserError('Unknown')
-
     cdef bytes name = cparser.llhttp_errno_name(errno)
 
     if errno in (cparser.HPE_CB_MESSAGE_BEGIN,
                  cparser.HPE_CB_HEADERS_COMPLETE,
                  cparser.HPE_CB_MESSAGE_COMPLETE,
                  cparser.HPE_CB_CHUNK_HEADER,
-                 cparser.HPE_CB_CHUNK_COMPLETE):
+                 cparser.HPE_CB_CHUNK_COMPLETE,
+                 cparser.HPE_USER):
         cls = HttpParserCallbackError
 
     elif errno == cparser.HPE_INVALID_STATUS:
@@ -371,99 +373,3 @@ cdef parser_error_from_errno(cparser.llhttp_errno_t errno):
         cls = HttpParserError
 
     return cls(name.decode('latin-1'))
-
-
-# @cython.freelist(250)
-# cdef class URL:
-#     cdef readonly bytes schema
-#     cdef readonly bytes host
-#     cdef readonly object port
-#     cdef readonly bytes path
-#     cdef readonly bytes query
-#     cdef readonly bytes fragment
-#     cdef readonly bytes userinfo
-#
-#     def __cinit__(self, bytes schema, bytes host, object port, bytes path,
-#                   bytes query, bytes fragment, bytes userinfo):
-#
-#         self.schema = schema
-#         self.host = host
-#         self.port = port
-#         self.path = path
-#         self.query = query
-#         self.fragment = fragment
-#         self.userinfo = userinfo
-#
-#     def __repr__(self):
-#         return ('<URL schema: {!r}, host: {!r}, port: {!r}, path: {!r}, '
-#                 'query: {!r}, fragment: {!r}, userinfo: {!r}>'
-#                 .format(self.schema, self.host, self.port, self.path,
-#                     self.query, self.fragment, self.userinfo))
-
-
-# def parse_url(url):
-#     cdef:
-#         Py_buffer py_buf
-#         char* buf_data
-#         cparser.http_parser_url* parsed
-#         int res
-#         bytes schema = None
-#         bytes host = None
-#         object port = None
-#         bytes path = None
-#         bytes query = None
-#         bytes fragment = None
-#         bytes userinfo = None
-#         object result = None
-#         int off
-#         int ln
-#
-#     parsed = <cparser.http_parser_url*> \
-#                         PyMem_Malloc(sizeof(cparser.http_parser_url))
-#     cparser.http_parser_url_init(parsed)
-#
-#     PyObject_GetBuffer(url, &py_buf, PyBUF_SIMPLE)
-#     try:
-#         buf_data = <char*>py_buf.buf
-#         res = cparser.http_parser_parse_url(buf_data, py_buf.len, 0, parsed)
-#
-#         if res == 0:
-#             if parsed.field_set & (1 << cparser.UF_SCHEMA):
-#                 off = parsed.field_data[<int>cparser.UF_SCHEMA].off
-#                 ln = parsed.field_data[<int>cparser.UF_SCHEMA].len
-#                 schema = buf_data[off:off+ln]
-#
-#             if parsed.field_set & (1 << cparser.UF_HOST):
-#                 off = parsed.field_data[<int>cparser.UF_HOST].off
-#                 ln = parsed.field_data[<int>cparser.UF_HOST].len
-#                 host = buf_data[off:off+ln]
-#
-#             if parsed.field_set & (1 << cparser.UF_PORT):
-#                 port = parsed.port
-#
-#             if parsed.field_set & (1 << cparser.UF_PATH):
-#                 off = parsed.field_data[<int>cparser.UF_PATH].off
-#                 ln = parsed.field_data[<int>cparser.UF_PATH].len
-#                 path = buf_data[off:off+ln]
-#
-#             if parsed.field_set & (1 << cparser.UF_QUERY):
-#                 off = parsed.field_data[<int>cparser.UF_QUERY].off
-#                 ln = parsed.field_data[<int>cparser.UF_QUERY].len
-#                 query = buf_data[off:off+ln]
-#
-#             if parsed.field_set & (1 << cparser.UF_FRAGMENT):
-#                 off = parsed.field_data[<int>cparser.UF_FRAGMENT].off
-#                 ln = parsed.field_data[<int>cparser.UF_FRAGMENT].len
-#                 fragment = buf_data[off:off+ln]
-#
-#             if parsed.field_set & (1 << cparser.UF_USERINFO):
-#                 off = parsed.field_data[<int>cparser.UF_USERINFO].off
-#                 ln = parsed.field_data[<int>cparser.UF_USERINFO].len
-#                 userinfo = buf_data[off:off+ln]
-#
-#             return URL(schema, host, port, path, query, fragment, userinfo)
-#         else:
-#             raise HttpParserInvalidURLError("invalid url {!r}".format(url))
-#     finally:
-#         PyBuffer_Release(&py_buf)
-#         PyMem_Free(parsed)

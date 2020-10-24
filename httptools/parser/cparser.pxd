@@ -151,3 +151,5 @@ cdef extern from "../../vendor/llhttp/build/llhttp.h":
 
     const char* llhttp_errno_name(llhttp_errno_t err)
     const char* llhttp_method_name(llhttp_method_t method)
+
+    void llhttp_set_error_reason(llhttp_t* parser, const char* reason);

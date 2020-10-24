@@ -116,8 +116,11 @@ class httptools_build_ext(build_ext):
                 # Support macports on Mac OS X.
                 self.compiler.add_include_dir('/opt/local/include')
         else:
+            self.compiler.add_include_dir(str(ROOT / 'vendor' / 'http-parser'))
             self.compiler.add_include_dir(str(ROOT / 'vendor' / 'llhttp' / 'build'))
             self.compiler.add_include_dir(str(ROOT / 'vendor' / 'llhttp' / 'src' / 'native'))
+            self.distribution.ext_modules[0].sources.append(
+                'vendor/http-parser/http_parser.c')
             self.distribution.ext_modules[0].sources.append(
                 'vendor/llhttp/build/c/llhttp.c')
             self.distribution.ext_modules[0].sources.append(
@@ -181,6 +184,13 @@ setup(
             "httptools.parser.parser",
             sources=[
                 "httptools/parser/parser.pyx",
+            ],
+            extra_compile_args=CFLAGS,
+        ),
+        Extension(
+            "httptools.parser.url_parser",
+            sources=[
+                "httptools/parser/url_parser.pyx",
             ],
             extra_compile_args=CFLAGS,
         ),
