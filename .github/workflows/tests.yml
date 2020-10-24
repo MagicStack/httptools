@@ -60,5 +60,6 @@ jobs:
     - name: Test
       if: steps.release.outputs.version == 0
       run: |
+        pip install wheel
         pip install -e .[test]
         python setup.py test
