@@ -53,8 +53,8 @@ cdef class HttpParser:
             raise MemoryError()
 
     def __dealloc__(self):
-        PyMem_Free(self._cparser)
         PyMem_Free(self._csettings)
+        PyMem_Free(self._cparser)
 
     cdef _init(self, protocol, cparser.llhttp_type_t mode):
         cparser.llhttp_settings_init(self._csettings)

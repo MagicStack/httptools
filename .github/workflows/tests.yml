@@ -15,7 +15,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        python-version: [3.5, 3.6, 3.7, 3.8]
+        python-version: [3.5, 3.6, 3.7, 3.8, 3.9]
         os: [windows-latest, ubuntu-18.04, macos-latest]
         exclude:
           # Python 3.5 is unable to properly
@@ -41,7 +41,7 @@ jobs:
           __version__\s*=\s*(?:['"])([[:PEP440:]])(?:['"])
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v2
       if: steps.release.outputs.version == 0
       with:
         python-version: ${{ matrix.python-version }}
