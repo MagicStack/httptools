@@ -51,3 +51,41 @@ jobs:
       run: |
         pip install -e .[test]
         python setup.py test
+
+  build-aarch64:
+    name: Linux
+    strategy:
+      matrix:
+        pyver: [cp36-cp36m, cp37-cp37m, cp38-cp38, cp39-cp39]
+        arch: [aarch64]
+      fail-fast: false
+    runs-on: ubuntu-latest
+    env:
+      py: /opt/python/${{ matrix.pyver }}/bin/python
+      img: quay.io/pypa/manylinux2014_${{ matrix.arch }}
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        fetch-depth: 50
+        submodules: true
+    - name: Set up QEMU
+      id: qemu
+      uses: docker/setup-qemu-action@v1
+    - name: Check if release PR.
+      uses: edgedb/action-release/validate-pr@master
+      continue-on-error: true
+      id: release
+      with:
+        version_file: httptools/_version.py
+        version_line_pattern: |
+          __version__\s*=\s*(?:['"])([[:PEP440:]])(?:['"])
+    - name: Install dependency
+      if: steps.release.outputs.version == 0
+      run: |
+        docker run --rm -v ${{ github.workspace }}:/ws:rw --workdir=/ws \
+          ${{ env.img }} ${{ env.py }} -m pip install -e .[test]
+    - name: Test
+      if: steps.release.outputs.version == 0
+      run: |
+        docker run --rm -v ${{ github.workspace }}:/ws:rw --workdir=/ws \
+          ${{ env.img }} ${{ env.py }} setup.py test
