@@ -51,3 +51,30 @@ jobs:
       run: |
         pip install -e .[test]
         python setup.py test
+        
+    # revert this after testing
+    - name: Install Python Deps
+      run: |
+        python -m pip install --upgrade setuptools pip wheel
+
+    - name: Build Wheels (linux)
+      if: startsWith(matrix.os, 'ubuntu')
+      uses: docker://quay.io/pypa/manylinux1_x86_64
+      env:
+        PYTHON_VERSION: ${{ matrix.python-version }}
+      with:
+        entrypoint: /github/workspace/.github/workflows/build-manylinux-wheels.sh
+
+    - name: Build Wheels (non-linux)
+      if: "!startsWith(matrix.os, 'ubuntu')"
+      run: |
+        make clean
+        python setup.py bdist_wheel
+
+    - name: Test Wheels
+      if: |
+        !startsWith(matrix.os, 'windows')
+        && !contains(github.event.pull_request.labels.*.name, 'skip wheel tests')
+      run: |
+        pip install --pre httptools -f "file:///${GITHUB_WORKSPACE}/dist"
+        make -C "${GITHUB_WORKSPACE}" testinstalled
