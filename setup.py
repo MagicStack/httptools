@@ -15,7 +15,7 @@ CFLAGS = ['-O2']
 
 ROOT = pathlib.Path(__file__).parent
 
-CYTHON_DEPENDENCY = 'Cython==0.29.22'
+CYTHON_DEPENDENCY = 'Cython==0.29.14'
 
 
 class httptools_build_ext(build_ext):
