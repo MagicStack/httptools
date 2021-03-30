@@ -70,7 +70,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: [3.5, 3.6, 3.7, 3.8]
+        python-version: [3.5, 3.6, 3.7, 3.8, 3.9]
         os: [ubuntu-16.04, macos-latest, windows-latest]
         exclude:
           # Python 3.5 is unable to properly
