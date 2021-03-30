@@ -28,7 +28,7 @@ cdef class HttpParser:
     cdef:
         cparser.llhttp_t* _cparser
         cparser.llhttp_settings_t* _csettings
-    
+
         bytes _current_header_name
         bytes _current_header_value
 
@@ -155,19 +155,18 @@ cdef class HttpParser:
         cdef cparser.llhttp_t* parser = self._cparser
         return bool(parser.upgrade)
 
-    def resume_after_upgrade(self):
-        cparser.llhttp_resume_after_upgrade(self._cparser)
-
     def feed_data(self, data):
         cdef:
             size_t data_len
-            cparser.llhttp_errno_t nb
+            cparser.llhttp_errno_t err
             Py_buffer *buf
+            bint owning_buf = False
+            char* err_pos
 
         if PyMemoryView_Check(data):
             buf = PyMemoryView_GET_BUFFER(data)
             data_len = <size_t>buf.len
-            nb = cparser.llhttp_execute(
+            err = cparser.llhttp_execute(
                 self._cparser,
                 <char*>buf.buf,
                 data_len)
@@ -175,21 +174,34 @@ cdef class HttpParser:
         else:
             buf = &self.py_buf
             PyObject_GetBuffer(data, buf, PyBUF_SIMPLE)
+            owning_buf = True
             data_len = <size_t>buf.len
 
-            nb = cparser.llhttp_execute(
+            err = cparser.llhttp_execute(
                 self._cparser,
                 <char*>buf.buf,
                 data_len)
 
-            PyBuffer_Release(buf)
+        try:
+            if self._cparser.upgrade == 1 and err == cparser.HPE_PAUSED_UPGRADE:
+                err_pos = cparser.llhttp_get_error_pos(self._cparser)
 
-        if self._cparser.upgrade == 1 and nb == cparser.HPE_PAUSED_UPGRADE:
-            read_bytes = cparser.llhttp_get_error_pos(self._cparser)
-            cparser.llhttp_resume_after_upgrade(self._cparser)
-            raise HttpParserUpgrade(read_bytes)
+                # Immediately free the parser from "error" state, simulating
+                # http-parser behavior here because 1) we never had the API to
+                # allow users manually "resume after upgrade", and 2) the use
+                # case for resuming parsing is very rare.
+                cparser.llhttp_resume_after_upgrade(self._cparser)
 
-        if nb != cparser.HPE_OK:
+                # The err_pos here is specific for the input buf. So if we ever
+                # switch to the llhttp behavior (re-raise HttpParserUpgrade for
+                # successive calls to feed_data() until resume_after_upgrade is
+                # called), we have to store the result and keep our own state.
+                raise HttpParserUpgrade(err_pos - <char*>buf.buf)
+        finally:
+            if owning_buf:
+                PyBuffer_Release(buf)
+
+        if err != cparser.HPE_OK:
             ex = parser_error_from_errno(
                 self._cparser,
                 <cparser.llhttp_errno_t> self._cparser.error)

@@ -29,7 +29,5 @@ __pycache__/
 /.pytest_cache
 /.mypy_cache
 /.vscode
-vendor/llhttp/node_modules
-vendor/llhttp/build
 .eggs
 .venv

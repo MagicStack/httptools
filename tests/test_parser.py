@@ -200,11 +200,11 @@ class TestResponseParser(unittest.TestCase):
         try:
             p.feed_data(UPGRADE_RESPONSE1)
         except httptools.HttpParserUpgrade as ex:
-            offset = len(ex.args[0])
+            offset = ex.args[0]
         else:
             self.fail('HttpParserUpgrade was not raised')
 
-        self.assertEqual(UPGRADE_RESPONSE1[-offset:], b'data')
+        self.assertEqual(UPGRADE_RESPONSE1[offset:], b'data')
 
         self.assertEqual(p.get_http_version(), '1.1')
         self.assertEqual(p.get_status_code(), 101)
@@ -332,11 +332,11 @@ class TestRequestParser(unittest.TestCase):
         try:
             p.feed_data(UPGRADE_REQUEST1)
         except httptools.HttpParserUpgrade as ex:
-            offset = len(ex.args[0])
+            offset = ex.args[0]
         else:
             self.fail('HttpParserUpgrade was not raised')
 
-        self.assertEqual(UPGRADE_REQUEST1[-offset:], b'Hot diggity dogg')
+        self.assertEqual(UPGRADE_REQUEST1[offset:], b'Hot diggity dogg')
 
         self.assertEqual(headers, {
             b'Sec-WebSocket-Key2': b'12998 5 Y3 1  .P00',
@@ -346,6 +346,11 @@ class TestRequestParser(unittest.TestCase):
             b'Sec-WebSocket-Protocol': b'sample',
             b'Host': b'example.com',
             b'Upgrade': b'WebSocket'})
+
+        # The parser can be used again for further parsing - this is a legacy
+        # behavior from the time we were still using http-parser.
+        p.feed_data(CHUNKED_REQUEST1_1)
+        self.assertEqual(p.get_method(), b'POST')
 
     def test_parser_request_upgrade_flag(self):
 

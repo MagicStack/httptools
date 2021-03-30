@@ -8,7 +8,7 @@ from cpython cimport PyObject_GetBuffer, PyBuffer_Release, PyBUF_SIMPLE, \
 from .errors import HttpParserInvalidURLError
 
 cimport cython
-from . cimport uparser
+from . cimport url_cparser as uparser
 
 __all__ = ('parse_url',)
 
