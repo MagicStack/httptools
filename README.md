@@ -8,8 +8,11 @@ The package is available on PyPI: `pip install httptools`.
 # APIs
 
 httptools contains two classes `httptools.HttpRequestParser`,
-`httptools.HttpResponseParser` and a function for parsing URLs
-`httptools.parse_url`.  See unittests for examples.
+`httptools.HttpResponseParser` (fulfilled through
+[llhttp](https://github.com/nodejs/llhttp)) and a function for
+parsing URLs `httptools.parse_url` (through
+[http-parse](https://github.com/nodejs/http-parser) for now).
+See unittests for examples.
 
 
 ```python

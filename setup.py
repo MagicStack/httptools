@@ -112,33 +112,34 @@ class httptools_build_ext(build_ext):
         self._initialized = True
 
     def build_extensions(self):
+        mod_parser, mod_url_parser = self.distribution.ext_modules
         if self.use_system_llhttp:
-            self.compiler.add_library('llhttp')
+            mod_parser.libraries.append('llhttp')
 
             if sys.platform == 'darwin' and \
                     os.path.exists('/opt/local/include'):
                 # Support macports on Mac OS X.
-                self.compiler.add_include_dir('/opt/local/include')
+                mod_parser.include_dirs.append('/opt/local/include')
         else:
-            self.compiler.add_include_dir(str(ROOT / 'vendor' / 'llhttp' / 'include'))
-            self.compiler.add_include_dir(str(ROOT / 'vendor' / 'llhttp' / 'src'))
-            self.distribution.ext_modules[0].sources.append(
-                'vendor/llhttp/src/api.c')
-            self.distribution.ext_modules[0].sources.append(
-                'vendor/llhttp/src/http.c')
-            self.distribution.ext_modules[0].sources.append(
-                'vendor/llhttp/src/llhttp.c')
+            mod_parser.include_dirs.append(
+                str(ROOT / 'vendor' / 'llhttp' / 'include'))
+            mod_parser.include_dirs.append(
+                str(ROOT / 'vendor' / 'llhttp' / 'src'))
+            mod_parser.sources.append('vendor/llhttp/src/api.c')
+            mod_parser.sources.append('vendor/llhttp/src/http.c')
+            mod_parser.sources.append('vendor/llhttp/src/llhttp.c')
 
         if self.use_system_http_parser:
-            self.compiler.add_library('http_parser')
+            mod_url_parser.libraries.append('http_parser')
 
             if sys.platform == 'darwin' and \
                     os.path.exists('/opt/local/include'):
                 # Support macports on Mac OS X.
-                self.compiler.add_include_dir('/opt/local/include')
+                mod_url_parser.include_dirs.append('/opt/local/include')
         else:
-            self.compiler.add_include_dir(str(ROOT / 'vendor' / 'http-parser'))
-            self.distribution.ext_modules[1].sources.append(
+            mod_url_parser.include_dirs.append(
+                str(ROOT / 'vendor' / 'http-parser'))
+            mod_url_parser.sources.append(
                 'vendor/http-parser/http_parser.c')
 
         super().build_extensions()
