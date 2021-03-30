@@ -13,17 +13,16 @@ release: compile test
 	python3 setup.py sdist upload
 
 
-test:
-	python3 setup.py test
+test: compile
+	python3 -m unittest -v
 
 clean:
 	find $(ROOT)/httptools/parser -name '*.c' | xargs rm -f
 	find $(ROOT)/httptools/parser -name '*.html' | xargs rm -f
 
-distclean:
+distclean: clean
 	git --git-dir="$(ROOT)/vendor/http-parser/.git" clean -dfx
-	find $(ROOT)/httptools/parser -name '*.c' | xargs rm -f
-	find $(ROOT)/httptools/parser -name '*.html' | xargs rm -f
+	git --git-dir="$(ROOT)/vendor/llhttp/.git" clean -dfx
 
 
 testinstalled:

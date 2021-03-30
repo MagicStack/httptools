@@ -103,7 +103,7 @@ class TestResponseParser(unittest.TestCase):
 
         with self.assertRaisesRegex(
                 httptools.HttpParserError,
-                'data received after completed connection'):
+                'Expected HTTP/'):
             p.feed_data(b'12123123')
 
     def test_parser_response_2(self):
@@ -117,7 +117,7 @@ class TestResponseParser(unittest.TestCase):
         for cbname in callbacks:
             with self.subTest('{} callback fails correctly'.format(cbname)):
                 with self.assertRaisesRegex(httptools.HttpParserCallbackError,
-                                            'callback failed'):
+                                            'callback error'):
 
                     m = mock.Mock()
                     getattr(m, cbname).side_effect = Exception()
@@ -225,7 +225,6 @@ class TestRequestParser(unittest.TestCase):
         p = httptools.HttpRequestParser(m)
 
         p.feed_data(CHUNKED_REQUEST1_1)
-
         self.assertEqual(p.get_method(), b'POST')
 
         m.on_message_begin.assert_called_once_with()
@@ -347,6 +346,11 @@ class TestRequestParser(unittest.TestCase):
             b'Sec-WebSocket-Protocol': b'sample',
             b'Host': b'example.com',
             b'Upgrade': b'WebSocket'})
+
+        # The parser can be used again for further parsing - this is a legacy
+        # behavior from the time we were still using http-parser.
+        p.feed_data(CHUNKED_REQUEST1_1)
+        self.assertEqual(p.get_method(), b'POST')
 
     def test_parser_request_upgrade_flag(self):
 

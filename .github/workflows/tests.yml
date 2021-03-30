@@ -41,7 +41,7 @@ jobs:
           __version__\s*=\s*(?:['"])([[:PEP440:]])(?:['"])
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v2
       if: steps.release.outputs.version == 0
       with:
         python-version: ${{ matrix.python-version }}
@@ -49,5 +49,6 @@ jobs:
     - name: Test
       if: steps.release.outputs.version == 0
       run: |
+        pip install wheel
         pip install -e .[test]
         python setup.py test
