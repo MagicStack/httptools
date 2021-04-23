@@ -17,6 +17,8 @@ jobs:
       uses: edgedb/action-release/validate-pr@master
       id: checkver
       with:
+        require_team: Release Managers
+        require_approval: no
         github_token: ${{ secrets.RELEASE_BOT_GITHUB_TOKEN }}
         version_file: httptools/_version.py
         version_line_pattern: |
