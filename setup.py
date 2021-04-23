@@ -16,6 +16,7 @@ CFLAGS = ['-O2']
 ROOT = pathlib.Path(__file__).parent
 
 CYTHON_DEPENDENCY = 'Cython==0.29.22'
+RUST_DEPENDENCY = 'setuptools-rust~=0.12'
 
 
 class httptools_build_ext(build_ext):
@@ -28,15 +29,12 @@ class httptools_build_ext(build_ext):
             'Cythion compiler directives'),
         ('use-system-llhttp', None,
             'Use the system provided llhttp, instead of the bundled one'),
-        ('use-system-http-parser', None,
-            'Use the system provided http-parser, instead of the bundled one'),
     ]
 
     boolean_options = build_ext.boolean_options + [
         'cython-always',
         'cython-annotate',
         'use-system-llhttp',
-        'use-system-http-parser',
     ]
 
     def initialize_options(self):
@@ -48,7 +46,6 @@ class httptools_build_ext(build_ext):
 
         super().initialize_options()
         self.use_system_llhttp = False
-        self.use_system_http_parser = False
         self.cython_always = False
         self.cython_annotate = None
         self.cython_directives = None
@@ -112,7 +109,7 @@ class httptools_build_ext(build_ext):
         self._initialized = True
 
     def build_extensions(self):
-        mod_parser, mod_url_parser = self.distribution.ext_modules
+        mod_parser = self.distribution.ext_modules[0]
         if self.use_system_llhttp:
             mod_parser.libraries.append('llhttp')
 
@@ -128,19 +125,6 @@ class httptools_build_ext(build_ext):
             mod_parser.sources.append('vendor/llhttp/src/api.c')
             mod_parser.sources.append('vendor/llhttp/src/http.c')
             mod_parser.sources.append('vendor/llhttp/src/llhttp.c')
-
-        if self.use_system_http_parser:
-            mod_url_parser.libraries.append('http_parser')
-
-            if sys.platform == 'darwin' and \
-                    os.path.exists('/opt/local/include'):
-                # Support macports on Mac OS X.
-                mod_url_parser.include_dirs.append('/opt/local/include')
-        else:
-            mod_url_parser.include_dirs.append(
-                str(ROOT / 'vendor' / 'http-parser'))
-            mod_url_parser.sources.append(
-                'vendor/http-parser/http_parser.c')
 
         super().build_extensions()
 
@@ -160,12 +144,22 @@ with open(str(ROOT / 'httptools' / '_version.py')) as f:
             'unable to read the version from httptools/_version.py')
 
 
-setup_requires = []
+setup_requires = [RUST_DEPENDENCY]
 
 if (not (ROOT / 'httptools' / 'parser' / 'parser.c').exists() or
         '--cython-always' in sys.argv):
     # No Cython output, require Cython to build.
     setup_requires.append(CYTHON_DEPENDENCY)
+
+
+def get_rust_extensions():
+    import setuptools_rust
+
+    yield setuptools_rust.RustExtension(
+        "httptools.parser.url_parser",
+        path="httptools/parser/url_parser/Cargo.toml",
+        binding=setuptools_rust.Binding.RustCPython,
+    )
 
 
 setup(
@@ -201,14 +195,8 @@ setup(
             ],
             extra_compile_args=CFLAGS,
         ),
-        Extension(
-            "httptools.parser.url_parser",
-            sources=[
-                "httptools/parser/url_parser.pyx",
-            ],
-            extra_compile_args=CFLAGS,
-        ),
     ],
+    rust_extensions=get_rust_extensions(),
     include_package_data=True,
     test_suite='tests.suite',
     setup_requires=setup_requires,

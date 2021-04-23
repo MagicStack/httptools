@@ -1,2 +1,4 @@
 recursive-include vendor *.c *.h LICENSE* README*
 include MANIFEST.in LICENSE
+include httptools/parser/url_parser/Cargo.toml
+recursive-include httptools/parser/url_parser/src *

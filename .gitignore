@@ -29,5 +29,7 @@ __pycache__/
 /.pytest_cache
 /.mypy_cache
 /.vscode
-.eggs
-.venv
+/.eggs
+/.venv
+/.python-version
+/httptools/parser/url_parser/target/
