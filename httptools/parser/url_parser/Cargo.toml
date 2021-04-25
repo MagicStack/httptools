@@ -1,0 +1,19 @@
+[package]
+name = "url_parser"
+license = "MIT"
+version = "0.1.0"
+authors = ["MagicStack Inc. <hello@magic.io>"]
+edition = "2018"
+
+[dependencies]
+http = "0.1"
+bytes = "0.4"
+
+[dependencies.cpython]
+version = "0.5.2"
+features = ["extension-module"]
+
+[lib]
+crate-type = ["lib", "cdylib"]
+name = "url_parser"
+path = "src/lib.rs"
