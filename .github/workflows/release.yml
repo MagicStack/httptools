@@ -73,7 +73,7 @@ jobs:
     strategy:
       matrix:
         python-version: [3.5, 3.6, 3.7, 3.8, 3.9]
-        os: [ubuntu-16.04, macos-latest, windows-latest]
+        os: [ubuntu-20.04, macos-latest, windows-latest]
         exclude:
           # Python 3.5 is unable to properly
           # find the recent VS tooling
@@ -81,11 +81,27 @@ jobs:
           - os: windows-latest
             python-version: 3.5
 
+    defaults:
+      run:
+        shell: bash
+
     steps:
     - uses: actions/checkout@v1
       with:
         fetch-depth: 50
         submodules: true
+
+    - uses: actions/download-artifact@v1
+      with:
+        name: dist
+        path: dist/
+
+    - name: Extract Release Version
+      id: relver
+      run: |
+        set -e
+        echo ::set-output name=version::$(cat dist/VERSION)
+        rm dist/*
 
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v1
@@ -114,9 +130,11 @@ jobs:
       if: |
         !startsWith(matrix.os, 'windows')
         && !contains(github.event.pull_request.labels.*.name, 'skip wheel tests')
+      env:
+        OS: ${{ matrix.os }}
+        PKG_VERSION: ${{ steps.relver.outputs.version }}
       run: |
-        pip install --pre httptools -f "file:///${GITHUB_WORKSPACE}/dist"
-        make -C "${GITHUB_WORKSPACE}" testinstalled
+        "${GITHUB_WORKSPACE}/.github/workflows/test-wheels.sh"
 
     - uses: actions/upload-artifact@v1
       with:
