@@ -13,10 +13,9 @@ jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
-      max-parallel: 4
       matrix:
-        python-version: [3.5, 3.6, 3.7, 3.8, 3.9]
-        os: [windows-latest, ubuntu-18.04, macos-latest]
+        python-version: [3.5, 3.6, 3.7, 3.8, 3.9, 3.10.0-rc.1]
+        os: [windows-latest, ubuntu-latest, macos-latest]
         exclude:
           # Python 3.5 is unable to properly
           # find the recent VS tooling
@@ -24,18 +23,21 @@ jobs:
           - os: windows-latest
             python-version: 3.5
 
+    env:
+      PIP_DISABLE_PIP_VERSION_CHECK: 1
+
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
       with:
         fetch-depth: 50
         submodules: true
 
     - name: Check if release PR.
       uses: edgedb/action-release/validate-pr@master
-      continue-on-error: true
       id: release
       with:
         github_token: ${{ secrets.RELEASE_BOT_GITHUB_TOKEN }}
+        missing_version_ok: yes
         version_file: httptools/_version.py
         version_line_pattern: |
           __version__\s*=\s*(?:['"])([[:PEP440:]])(?:['"])
@@ -49,6 +51,6 @@ jobs:
     - name: Test
       if: steps.release.outputs.version == 0
       run: |
-        pip install -U pip setuptools wheel
-        pip install -e .[test]
-        python setup.py test
+        python -m pip install -U pip setuptools wheel
+        python -m pip install -e .[test]
+        python -m unittest -v tests.suite

@@ -94,12 +94,12 @@ def parse_url(url: bytes):
 1. Clone this repository with
    `git clone --recursive git@github.com:MagicStack/httptools.git`
 
-2. Create a virtual environment with Python 3.5:
-   `python3.5 -m venv envname`
+2. Create a virtual environment with Python 3:
+   `python3 -m venv envname`
 
 3. Activate the environment with `source envname/bin/activate`
 
-4. Install Cython with `pip install cython`
+4. Install development requirements with `pip install -e .[test]`
 
 5. Run `make` and `make test`.
 

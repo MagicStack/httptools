@@ -185,6 +185,7 @@ setup(
         'Development Status :: 5 - Production/Stable',
     ],
     platforms=['macOS', 'POSIX', 'Windows'],
+    python_requires='>=3.5.0',
     zip_safe=False,
     author='Yury Selivanov',
     author_email='yury@magic.io',
