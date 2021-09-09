@@ -210,7 +210,7 @@ setup(
             extra_compile_args=CFLAGS,
         ),
     ],
-    include_package_data=True,
+    include_package_data=False,
     test_suite='tests.suite',
     setup_requires=setup_requires,
     extras_require={
