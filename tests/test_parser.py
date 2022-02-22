@@ -101,6 +101,9 @@ class TestResponseParser(unittest.TestCase):
         self.assertFalse(m.on_chunk_header.called)
         self.assertFalse(m.on_chunk_complete.called)
 
+    def test_parser_response_1b(self):
+        p = httptools.HttpResponseParser(None)
+
         with self.assertRaisesRegex(
                 httptools.HttpParserError,
                 'Expected HTTP/'):
