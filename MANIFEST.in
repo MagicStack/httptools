@@ -1,2 +1,5 @@
 recursive-include vendor *.c *.h LICENSE* README*
 include MANIFEST.in LICENSE
+include httptools/py.typed
+include httptools/parser/url_parser.pyi
+include httptools/parser/parser.pyi
