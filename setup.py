@@ -1,8 +1,8 @@
 import sys
 
 vi = sys.version_info
-if vi < (3, 5):
-    raise RuntimeError('httptools require Python 3.5 or greater')
+if vi < (3, 8):
+    raise RuntimeError('httptools require Python 3.8 or greater')
 else:
     import os.path
     import pathlib
@@ -185,7 +185,7 @@ setup(
         'Development Status :: 5 - Production/Stable',
     ],
     platforms=['macOS', 'POSIX', 'Windows'],
-    python_requires='>=3.5.0',
+    python_requires='>=3.8.0',
     zip_safe=False,
     author='Yury Selivanov',
     author_email='yury@magic.io',
