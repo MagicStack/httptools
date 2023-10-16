@@ -211,6 +211,7 @@ setup(
         ),
     ],
     include_package_data=True,
+    exclude_package_data={"": ["*.c", "*.h"]},
     test_suite='tests.suite',
     setup_requires=setup_requires,
     extras_require={
