@@ -73,19 +73,16 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
         cibw_arch: ["auto64", "aarch64", "universal2"]
         cibw_python:
-          - "cp36-*"
-          - "cp37-*"
           - "cp38-*"
           - "cp39-*"
           - "cp310-*"
+          - "cp311-*"
+          - "cp312-*"
         exclude:
           - os: ubuntu-latest
             cibw_arch: universal2
           - os: macos-latest
             cibw_arch: aarch64
-          - os: macos-latest
-            cibw_python: "cp36-*"
-            cibw_arch: universal2
           - os: macos-latest
             cibw_python: "cp37-*"
             cibw_arch: universal2
@@ -113,7 +110,7 @@ jobs:
       with:
         platforms: arm64
 
-    - uses: pypa/cibuildwheel@v2.1.1
+    - uses: pypa/cibuildwheel@v2.9.0
       env:
         CIBW_BUILD_VERBOSITY: 1
         CIBW_BUILD: ${{ matrix.cibw_python }}

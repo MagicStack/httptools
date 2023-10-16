@@ -16,7 +16,7 @@ Content-Length: 130
 Accept-Ranges: bytes
 Connection: close
 
-'''
+'''.replace(b'\n', b'\r\n')
 
 RESPONSE1_BODY = b'''
 <html>
@@ -29,31 +29,31 @@ RESPONSE1_BODY = b'''
 </html>'''
 
 
-CHUNKED_REQUEST1_1 = b'''POST /test.php?a=b+c HTTP/1.2
-User-Agent: Fooo
-Host: bar
-Transfer-Encoding: chunked
+CHUNKED_REQUEST1_1 = b'''POST /test.php?a=b+c HTTP/1.1\r
+User-Agent: Fooo\r
+Host: bar\r
+Transfer-Encoding: chunked\r
 
 5\r\nhello\r\n6\r\n world\r\n'''
 
 CHUNKED_REQUEST1_2 = b'''0\r\nVary: *\r\nUser-Agent: spam\r\n\r\n'''
 
-CHUNKED_REQUEST1_3 = b'''POST /test.php?a=b+c HTTP/1.2
-User-Agent: Fooo
-Host: bar
-Transfer-Encoding: chunked
+CHUNKED_REQUEST1_3 = b'''POST /test.php?a=b+c HTTP/1.1\r
+User-Agent: Fooo\r
+Host: bar\r
+Transfer-Encoding: chunked\r
 
 b\r\n+\xce\xcfM\xb5MI,I\x04\x00\r\n0\r\n\r\n'''
 
 
-UPGRADE_REQUEST1 = b'''GET /demo HTTP/1.1
-Host: example.com
-Connection: Upgrade
-Sec-WebSocket-Key2: 12998 5 Y3 1  .P00
-Sec-WebSocket-Protocol: sample
-Upgrade: WebSocket
-Sec-WebSocket-Key1: 4 @1  46546xW%0l 1 5
-Origin: http://example.com
+UPGRADE_REQUEST1 = b'''GET /demo HTTP/1.1\r
+Host: example.com\r
+Connection: Upgrade\r
+Sec-WebSocket-Key2: 12998 5 Y3 1  .P00\r
+Sec-WebSocket-Protocol: sample\r
+Upgrade: WebSocket\r
+Sec-WebSocket-Key1: 4 @1  46546xW%0l 1 5\r
+Origin: http://example.com\r
 
 Hot diggity dogg'''
 
@@ -100,6 +100,9 @@ class TestResponseParser(unittest.TestCase):
         self.assertFalse(m.on_url.called)
         self.assertFalse(m.on_chunk_header.called)
         self.assertFalse(m.on_chunk_complete.called)
+
+    def test_parser_response_1b(self):
+        p = httptools.HttpResponseParser(None)
 
         with self.assertRaisesRegex(
                 httptools.HttpParserError,
@@ -230,7 +233,7 @@ class TestRequestParser(unittest.TestCase):
         m.on_message_begin.assert_called_once_with()
 
         m.on_url.assert_called_once_with(b'/test.php?a=b+c')
-        self.assertEqual(p.get_http_version(), '1.2')
+        self.assertEqual(p.get_http_version(), '1.1')
 
         m.on_header.assert_called_with(b'Transfer-Encoding', b'chunked')
         m.on_chunk_header.assert_called_with()
@@ -313,7 +316,7 @@ class TestRequestParser(unittest.TestCase):
         self.assertEqual(p.get_method(), b'POST')
 
         m.on_url.assert_called_once_with(b'/test.php?a=b+c')
-        self.assertEqual(p.get_http_version(), '1.2')
+        self.assertEqual(p.get_http_version(), '1.1')
 
         m.on_header.assert_called_with(b'Transfer-Encoding', b'chunked')
         m.on_chunk_header.assert_called_with()
@@ -436,17 +439,17 @@ class TestRequestParser(unittest.TestCase):
     def test_parser_request_2(self):
         p = httptools.HttpRequestParser(None)
         with self.assertRaises(httptools.HttpParserInvalidMethodError):
-            p.feed_data(b'SPAM /test.php?a=b+c HTTP/1.2')
+            p.feed_data(b'SPAM /test.php?a=b+c HTTP/1.1')
 
     def test_parser_request_3(self):
         p = httptools.HttpRequestParser(None)
         with self.assertRaises(httptools.HttpParserInvalidURLError):
-            p.feed_data(b'POST  HTTP/1.2')
+            p.feed_data(b'POST HTTP/1.1')
 
     def test_parser_request_4(self):
         p = httptools.HttpRequestParser(None)
         with self.assertRaisesRegex(TypeError, 'a bytes-like object'):
-            p.feed_data('POST  HTTP/1.2')
+            p.feed_data('POST HTTP/1.1')
 
     def test_parser_request_fragmented(self):
         m = mock.Mock()
