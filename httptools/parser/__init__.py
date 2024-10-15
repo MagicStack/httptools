@@ -1,3 +1,4 @@
+from .protocol import HTTPProtocol
 from .parser import *  # NoQA
 from .errors import *  # NoQA
 from .url_parser import *  # NoQA
