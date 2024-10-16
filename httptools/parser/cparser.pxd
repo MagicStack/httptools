@@ -154,3 +154,14 @@ cdef extern from "llhttp.h":
     const char* llhttp_method_name(llhttp_method_t method)
 
     void llhttp_set_error_reason(llhttp_t* parser, const char* reason);
+
+    void llhttp_set_lenient_headers(llhttp_t* parser, bint enabled);
+    void llhttp_set_lenient_chunked_length(llhttp_t* parser, bint enabled);
+    void llhttp_set_lenient_keep_alive(llhttp_t* parser, bint enabled);
+    void llhttp_set_lenient_transfer_encoding(llhttp_t* parser, bint enabled);
+    void llhttp_set_lenient_version(llhttp_t* parser, bint enabled);
+    void llhttp_set_lenient_data_after_close(llhttp_t* parser, bint enabled);
+    void llhttp_set_lenient_optional_lf_after_cr(llhttp_t* parser, bint enabled);
+    void llhttp_set_lenient_optional_cr_before_lf(llhttp_t* parser, bint enabled);
+    void llhttp_set_lenient_optional_crlf_after_chunk(llhttp_t* parser, bint enabled);
+    void llhttp_set_lenient_spaces_after_chunk_size(llhttp_t* parser, bint enabled);

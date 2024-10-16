@@ -1,6 +1,8 @@
 #cython: language_level=3
 
 from __future__ import print_function
+from typing import Optional
+
 from cpython.mem cimport PyMem_Malloc, PyMem_Free
 from cpython cimport PyObject_GetBuffer, PyBuffer_Release, PyBUF_SIMPLE, \
                      Py_buffer, PyBytes_AsString
@@ -144,6 +146,51 @@ cdef class HttpParser:
 
     ### Public API ###
 
+    def set_dangerous_leniencies(
+        self,
+        lenient_headers: Optional[bool] = None,
+        lenient_chunked_length: Optional[bool] = None,
+        lenient_keep_alive: Optional[bool] = None,
+        lenient_transfer_encoding: Optional[bool] = None,
+        lenient_version: Optional[bool] = None,
+        lenient_data_after_close: Optional[bool] = None,
+        lenient_optional_lf_after_cr: Optional[bool] = None,
+        lenient_optional_cr_before_lf: Optional[bool] = None,
+        lenient_optional_crlf_after_chunk: Optional[bool] = None,
+        lenient_spaces_after_chunk_size: Optional[bool] = None,
+    ):
+        cdef cparser.llhttp_t* parser = self._cparser
+        if lenient_headers is not None:
+            cparser.llhttp_set_lenient_headers(
+                parser, lenient_headers)
+        if lenient_chunked_length is not None:
+            cparser.llhttp_set_lenient_chunked_length(
+                parser, lenient_chunked_length)
+        if lenient_keep_alive is not None:
+            cparser.llhttp_set_lenient_keep_alive(
+                parser, lenient_keep_alive)
+        if lenient_transfer_encoding is not None:
+            cparser.llhttp_set_lenient_transfer_encoding(
+                parser, lenient_transfer_encoding)
+        if lenient_version is not None:
+            cparser.llhttp_set_lenient_version(
+                parser, lenient_version)
+        if lenient_data_after_close is not None:
+            cparser.llhttp_set_lenient_data_after_close(
+                parser, lenient_data_after_close)
+        if lenient_optional_lf_after_cr is not None:
+            cparser.llhttp_set_lenient_optional_lf_after_cr(
+                parser, lenient_optional_lf_after_cr)
+        if lenient_optional_cr_before_lf is not None:
+            cparser.llhttp_set_lenient_optional_cr_before_lf(
+                parser, lenient_optional_cr_before_lf)
+        if lenient_optional_crlf_after_chunk is not None:
+            cparser.llhttp_set_lenient_optional_crlf_after_chunk(
+                parser, lenient_optional_crlf_after_chunk)
+        if lenient_spaces_after_chunk_size is not None:
+            cparser.llhttp_set_lenient_spaces_after_chunk_size(
+                parser, lenient_spaces_after_chunk_size)
+
     def get_http_version(self):
         cdef cparser.llhttp_t* parser = self._cparser
         return '{}.{}'.format(parser.http_major, parser.http_minor)
@@ -161,7 +208,7 @@ cdef class HttpParser:
             cparser.llhttp_errno_t err
             Py_buffer *buf
             bint owning_buf = False
-            char* err_pos
+            const char* err_pos
 
         if PyMemoryView_Check(data):
             buf = PyMemoryView_GET_BUFFER(data)
