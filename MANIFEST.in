@@ -1,2 +1,3 @@
+recursive-include httptools *.pxd *.pyx
 recursive-include vendor *.c *.h LICENSE* README*
 include MANIFEST.in LICENSE
