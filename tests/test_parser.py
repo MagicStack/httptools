@@ -33,7 +33,7 @@ CHUNKED_REQUEST1_1 = b'''POST /test.php?a=b+c HTTP/1.1\r
 User-Agent: Fooo\r
 Host: bar\r
 Transfer-Encoding: chunked\r
-
+\r
 5\r\nhello\r\n6\r\n world\r\n'''
 
 CHUNKED_REQUEST1_2 = b'''0\r\nVary: *\r\nUser-Agent: spam\r\n\r\n'''
@@ -42,7 +42,7 @@ CHUNKED_REQUEST1_3 = b'''POST /test.php?a=b+c HTTP/1.1\r
 User-Agent: Fooo\r
 Host: bar\r
 Transfer-Encoding: chunked\r
-
+\r
 b\r\n+\xce\xcfM\xb5MI,I\x04\x00\r\n0\r\n\r\n'''
 
 
@@ -54,7 +54,7 @@ Sec-WebSocket-Protocol: sample\r
 Upgrade: WebSocket\r
 Sec-WebSocket-Key1: 4 @1  46546xW%0l 1 5\r
 Origin: http://example.com\r
-
+\r
 Hot diggity dogg'''
 
 UPGRADE_RESPONSE1 = b'''HTTP/1.1 101 Switching Protocols
