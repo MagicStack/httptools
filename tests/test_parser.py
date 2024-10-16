@@ -6,6 +6,18 @@ from unittest import mock
 
 RESPONSE1_HEAD = b'''HTTP/1.1 200 OK
 Date: Mon, 23 May 2005 22:38:34 GMT
+Server: Apache/1.3.3.7 (Unix) (Red-Hat/Linux)
+Last-Modified: Wed, 08 Jan 2003 23:11:55 GMT
+ETag: "3f80f-1b6-3e1cb03b"
+Content-Type: text/html; charset=UTF-8
+Content-Length: 130
+Accept-Ranges: bytes
+Connection: close
+
+'''.replace(b'\n', b'\r\n')
+
+RESPONSE1_SPACES_IN_HEAD = b'''HTTP/1.1 200 OK
+Date: Mon, 23 May 2005 22:38:34 GMT
 Server: Apache/1.3.3.7
         (Unix) (Red-Hat/Linux)
 Last-Modified: Wed, 08 Jan 2003 23:11:55 GMT
@@ -89,7 +101,7 @@ class TestResponseParser(unittest.TestCase):
         self.assertEqual(len(headers), 8)
         self.assertEqual(headers.get(b'Connection'), b'close')
         self.assertEqual(headers.get(b'Content-Type'),
-                         b'text/html;  charset=UTF-8')
+                         b'text/html; charset=UTF-8')
 
         self.assertFalse(m.on_body.called)
         p.feed_data(bytearray(RESPONSE1_BODY))
@@ -108,6 +120,53 @@ class TestResponseParser(unittest.TestCase):
                 httptools.HttpParserError,
                 'Expected HTTP/'):
             p.feed_data(b'12123123')
+
+    def test_parser_response_leninent_headers_1(self):
+        m = mock.Mock()
+
+        headers = {}
+        m.on_header.side_effect = headers.__setitem__
+
+        p = httptools.HttpResponseParser(m)
+
+        with self.assertRaisesRegex(
+            httptools.HttpParserError,
+            "whitespace after header value",
+        ):
+            p.feed_data(memoryview(RESPONSE1_SPACES_IN_HEAD))
+
+    def test_parser_response_leninent_headers_2(self):
+        m = mock.Mock()
+
+        headers = {}
+        m.on_header.side_effect = headers.__setitem__
+
+        p = httptools.HttpResponseParser(m)
+
+        p.set_dangerous_leniencies(lenient_headers=True)
+        p.feed_data(memoryview(RESPONSE1_SPACES_IN_HEAD))
+
+        self.assertEqual(p.get_http_version(), '1.1')
+        self.assertEqual(p.get_status_code(), 200)
+
+        m.on_status.assert_called_once_with(b'OK')
+
+        m.on_headers_complete.assert_called_once_with()
+        self.assertEqual(m.on_header.call_count, 8)
+        self.assertEqual(len(headers), 8)
+        self.assertEqual(headers.get(b'Connection'), b'close')
+        self.assertEqual(headers.get(b'Content-Type'),
+                         b'text/html;  charset=UTF-8')
+
+        self.assertFalse(m.on_body.called)
+        p.feed_data(bytearray(RESPONSE1_BODY))
+        m.on_body.assert_called_once_with(RESPONSE1_BODY)
+
+        m.on_message_complete.assert_called_once_with()
+
+        self.assertFalse(m.on_url.called)
+        self.assertFalse(m.on_chunk_header.called)
+        self.assertFalse(m.on_chunk_complete.called)
 
     def test_parser_response_2(self):
         with self.assertRaisesRegex(TypeError, 'a bytes-like object'):
