@@ -18,6 +18,7 @@ authors = [
     {name = "Yury Selivanov", email="yury@magic.io"},
 ]
 license = "MIT"
+license-files = ["LICENSE"]
 description = "A collection of framework independent HTTP protocol utils."
 readme = "README.md"
 
