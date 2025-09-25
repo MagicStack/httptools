@@ -46,5 +46,5 @@ jobs:
       if: steps.release.outputs.version == 0
       run: |
         python -m pip install -U pip setuptools wheel
-        python -m pip install -e .[test]
+        python -m pip install .[test]
         python -m unittest -v tests.suite
