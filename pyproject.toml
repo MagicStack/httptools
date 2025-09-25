@@ -1,10 +1,10 @@
 [build-system]
 build-backend = "setuptools.build_meta"
-requires = ["setuptools"]
+requires = ["setuptools", "cython"]
 
 [project]
 name = "httptools"
-dynamic = ["version"]
+dynamic = ["version", "optional-dependencies"]
 classifiers = [
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
