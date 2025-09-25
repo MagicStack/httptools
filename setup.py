@@ -145,10 +145,6 @@ class httptools_build_ext(build_ext):
         super().build_extensions()
 
 
-with open(str(ROOT / 'README.md')) as f:
-    long_description = f.read()
-
-
 with open(str(ROOT / 'httptools' / '_version.py')) as f:
     for line in f:
         if line.startswith('__version__ ='):
@@ -169,27 +165,9 @@ if (not (ROOT / 'httptools' / 'parser' / 'parser.c').exists() or
 
 
 setup(
-    name='httptools',
     version=VERSION,
-    description='A collection of framework independent HTTP protocol utils.',
-    long_description=long_description,
-    long_description_content_type='text/markdown',
-    url='https://github.com/MagicStack/httptools',
-    classifiers=[
-        'License :: OSI Approved :: MIT License',
-        'Intended Audience :: Developers',
-        'Programming Language :: Python :: 3',
-        'Operating System :: POSIX',
-        'Operating System :: MacOS :: MacOS X',
-        'Environment :: Web Environment',
-        'Development Status :: 5 - Production/Stable',
-    ],
     platforms=['macOS', 'POSIX', 'Windows'],
-    python_requires='>=3.8.0',
     zip_safe=False,
-    author='Yury Selivanov',
-    author_email='yury@magic.io',
-    license='MIT',
     packages=['httptools', 'httptools.parser'],
     cmdclass={
         'build_ext': httptools_build_ext,

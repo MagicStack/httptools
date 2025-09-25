@@ -1,0 +1,25 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools"]
+
+[project]
+name = "httptools"
+dynamic = ["version"]
+classifiers = [
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Operating System :: POSIX",
+    "Operating System :: MacOS :: MacOS X",
+    "Environment :: Web Environment",
+    "Development Status :: 5 - Production/Stable",
+]
+requires-python = ">=3.8"
+authors = [
+    {name = "Yury Selivanov", email="yury@magic.io"},
+]
+license = "MIT"
+description = "A collection of framework independent HTTP protocol utils."
+readme = "README.md"
+
+[project.urls]
+Homepage = "https://github.com/MagicStack/httptools"
