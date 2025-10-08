@@ -13,7 +13,7 @@ classifiers = [
     "Environment :: Web Environment",
     "Development Status :: 5 - Production/Stable",
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 authors = [
     {name = "Yury Selivanov", email="yury@magic.io"},
 ]
