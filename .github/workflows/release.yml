@@ -5,7 +5,7 @@ on:
     branches:
       - "master"
       - "ci"
-      - "[0-9]+.[0-9x]+*"
+      - "[0-9]+.[0-9]+.[0-9x]+*"
     paths:
       - "httptools/_version.py"
 
