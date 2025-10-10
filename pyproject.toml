@@ -1,10 +1,10 @@
 [build-system]
 build-backend = "setuptools.build_meta"
-requires = ["setuptools", "cython"]
+requires = ["setuptools==80.9.0"]
 
 [project]
 name = "httptools"
-dynamic = ["version", "optional-dependencies"]
+dynamic = ["version"]
 classifiers = [
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
@@ -24,3 +24,6 @@ readme = "README.md"
 
 [project.urls]
 Homepage = "https://github.com/MagicStack/httptools"
+
+[project.optional-dependencies]
+test = []  # for backward compatibility

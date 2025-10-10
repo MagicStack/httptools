@@ -1,16 +1,10 @@
 import sys
 
-from Cython.Build import cythonize
+import os.path
+import pathlib
 
-vi = sys.version_info
-if vi < (3, 8):
-    raise RuntimeError('httptools require Python 3.8 or greater')
-else:
-    import os.path
-    import pathlib
-
-    from setuptools import setup, Extension
-    from setuptools.command.build_ext import build_ext as build_ext
+from setuptools import setup, Extension
+from setuptools.command.build_ext import build_ext as build_ext
 
 
 CFLAGS = ['-O2']
@@ -22,6 +16,12 @@ CYTHON_DEPENDENCY = 'Cython>=3.1.0'
 
 class httptools_build_ext(build_ext):
     user_options = build_ext.user_options + [
+        ('cython-always', None,
+            'run cythonize() even if .c files are present'),
+        ('cython-annotate', None,
+            'Produce a colorized HTML version of the Cython source.'),
+        ('cython-directives=', None,
+            'Cythion compiler directives'),
         ('use-system-llhttp', None,
             'Use the system provided llhttp, instead of the bundled one'),
         ('use-system-http-parser', None,
@@ -29,6 +29,8 @@ class httptools_build_ext(build_ext):
     ]
 
     boolean_options = build_ext.boolean_options + [
+        'cython-always',
+        'cython-annotate',
         'use-system-llhttp',
         'use-system-http-parser',
     ]
@@ -43,6 +45,11 @@ class httptools_build_ext(build_ext):
         super().initialize_options()
         self.use_system_llhttp = False
         self.use_system_http_parser = False
+        self.cython_always = False
+        self.cython_annotate = None
+        self.cython_directives = None
+        if 'editable_wheel' in sys.argv:
+            self.inplace = True
 
     def finalize_options(self):
         # finalize_options() may be called multiple times on the
@@ -50,6 +57,50 @@ class httptools_build_ext(build_ext):
         # set options.
         if getattr(self, '_initialized', False):
             return
+
+        need_cythonize = self.cython_always
+        cfiles = {}
+
+        for extension in self.distribution.ext_modules:
+            for i, sfile in enumerate(extension.sources):
+                if sfile.endswith('.pyx'):
+                    prefix, ext = os.path.splitext(sfile)
+                    cfile = prefix + '.c'
+
+                    if os.path.exists(cfile) and not self.cython_always:
+                        extension.sources[i] = cfile
+                    else:
+                        if os.path.exists(cfile):
+                            cfiles[cfile] = os.path.getmtime(cfile)
+                        else:
+                            cfiles[cfile] = 0
+                        need_cythonize = True
+
+        if need_cythonize:
+            try:
+                import Cython
+            except ImportError:
+                import setuptools.build_meta
+
+                raise setuptools.build_meta.SetupRequirementsError([CYTHON_DEPENDENCY])
+
+            from Cython.Build import cythonize
+
+            directives = {}
+            if self.cython_directives:
+                for directive in self.cython_directives.split(','):
+                    k, _, v = directive.partition('=')
+                    if v.lower() == 'false':
+                        v = False
+                    if v.lower() == 'true':
+                        v = True
+
+                    directives[k] = v
+
+            self.distribution.ext_modules[:] = cythonize(
+                self.distribution.ext_modules,
+                compiler_directives=directives,
+                annotate=self.cython_annotate)
 
         super().finalize_options()
 
@@ -100,14 +151,6 @@ with open(str(ROOT / 'httptools' / '_version.py')) as f:
             'unable to read the version from httptools/_version.py')
 
 
-setup_requires = []
-
-if (not (ROOT / 'httptools' / 'parser' / 'parser.c').exists() or
-        '--cython-always' in sys.argv):
-    # No Cython output, require Cython to build.
-    setup_requires.append(CYTHON_DEPENDENCY)
-
-
 setup(
     version=VERSION,
     platforms=['macOS', 'POSIX', 'Windows'],
@@ -116,7 +159,7 @@ setup(
     cmdclass={
         'build_ext': httptools_build_ext,
     },
-    ext_modules=cythonize([
+    ext_modules=[
         Extension(
             "httptools.parser.parser",
             sources=[
@@ -131,14 +174,7 @@ setup(
             ],
             extra_compile_args=CFLAGS,
         ),
-    ]),
+    ],
     include_package_data=True,
     exclude_package_data={"": ["*.c", "*.h"]},
-    test_suite='tests.suite',
-    setup_requires=setup_requires,
-    extras_require={
-        'test': [
-            CYTHON_DEPENDENCY
-        ]
-    }
 )

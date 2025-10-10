@@ -3,27 +3,26 @@
 
 PYTHON ?= python3
 ROOT = $(dir $(realpath $(firstword $(MAKEFILE_LIST))))
-
+UV := $(shell command -v uv 2> /dev/null)
+ifdef UV
+	PYTHON := uv run
+	PIP := uv pip
+else
+	PIP := pip
+endif
 
 compile:
-	python3 setup.py build_ext --inplace
-
-
-release: compile test
-	python3 setup.py sdist upload
-
+	$(PIP) install -e .
 
 test: compile
-	python3 -m unittest -v
+	$(PYTHON) -m unittest -v
 
 clean:
 	find $(ROOT)/httptools/parser -name '*.c' | xargs rm -f
+	find $(ROOT)/httptools/parser -name '*.so' | xargs rm -f
 	find $(ROOT)/httptools/parser -name '*.html' | xargs rm -f
+	rm -rf build
 
 distclean: clean
 	git --git-dir="$(ROOT)/vendor/http-parser/.git" clean -dfx
 	git --git-dir="$(ROOT)/vendor/llhttp/.git" clean -dfx
-
-
-testinstalled:
-	cd /tmp && $(PYTHON) $(ROOT)/tests/__init__.py

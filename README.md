@@ -99,9 +99,7 @@ def parse_url(url: bytes):
 
 3. Activate the environment with `source envname/bin/activate`
 
-4. Install development requirements with `pip install -e .[test]`
-
-5. Run `make` and `make test`.
+4. Run `make` and `make test`.
 
 
 # License
