@@ -1,4 +1,3 @@
-from typing import Union
 from array import array
 from .protocol import HTTPProtocol
 
@@ -36,7 +35,7 @@ class HttpParser:
         The method exposes a flag set just before on_headers_complete.
         Calling this method earlier will only yield `False`."""
 
-    def feed_data(self, data: Union[bytes, bytearray, memoryview, array[int]]) -> None:
+    def feed_data(self, data: bytes | bytearray | memoryview | array[int]) -> None:
         """Feed data to the parser.
 
         Will eventually trigger callbacks on the ``protocol`` object.

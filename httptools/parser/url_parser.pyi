@@ -1,4 +1,3 @@
-from typing import Union
 from array import array
 
 class URL:
@@ -10,5 +9,5 @@ class URL:
     fragment: bytes
     userinfo: bytes
 
-def parse_url(url: Union[bytes, bytearray, memoryview, array[int]]) -> URL:
+def parse_url(url: bytes | bytearray | memoryview | array[int]) -> URL:
     """Parse a URL string into a structured Python object."""
