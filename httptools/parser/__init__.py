@@ -1,5 +1,5 @@
 from .protocol import HTTPProtocol
-from .parser import HttpParser, HttpRequestParser, HttpResponseParser  # NoQA
+from .parser import HttpRequestParser, HttpResponseParser  # NoQA
 from .errors import (
     HttpParserError,
     HttpParserCallbackError,
@@ -14,7 +14,6 @@ __all__ = (
     # protocol
     "HTTPProtocol",
     # parser
-    "HttpParser",
     "HttpRequestParser",
     "HttpResponseParser",
     # errors
