@@ -19,7 +19,7 @@ authors = [
 ]
 license = "MIT"
 license-files = [
-"LICENSE",
+    "LICENSE",
     "vendor/http-parser/LICENSE-MIT",
     "vendor/llhttp/LICENSE",
 ]
