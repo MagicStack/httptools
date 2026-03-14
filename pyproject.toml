@@ -1,6 +1,6 @@
 [build-system]
 build-backend = "setuptools.build_meta"
-requires = ["setuptools==80.9.0"]
+requires = ["setuptools>=80.9.0,<=82.0.1"]
 
 [project]
 name = "httptools"
