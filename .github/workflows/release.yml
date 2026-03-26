@@ -69,7 +69,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest, windows-11-arm]
         cibw_arch: ["auto64", "aarch64", "universal2"]
         cibw_python:
           - "cp39"
@@ -87,6 +87,16 @@ jobs:
             cibw_arch: universal2
           - os: windows-latest
             cibw_arch: aarch64
+          - os: windows-11-arm
+            cibw_arch: universal2
+          - os: windows-11-arm
+            cibw_arch: aarch64
+          - os: windows-11-arm
+            cibw_arch: auto64
+          - os: windows-11-arm
+            cibw_arch: "cp39"
+          - os: windows-11-arm
+            cibw_arch: "cp10"
 
     defaults:
       run:
