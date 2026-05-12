@@ -70,7 +70,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        cibw_arch: ["auto64", "aarch64", "universal2"]
+        cibw_arch: ["auto64", "aarch64", "universal2", "ppc64le"]
         cibw_python:
           - "cp39"
           - "cp310"
@@ -83,10 +83,14 @@ jobs:
             cibw_arch: universal2
           - os: macos-latest
             cibw_arch: aarch64
+          - os: macos-latest
+            cibw_arch: ppc64le
           - os: windows-latest
             cibw_arch: universal2
           - os: windows-latest
             cibw_arch: aarch64
+          - os: windows-latest
+            cibw_arch: ppc64le
 
     defaults:
       run:
@@ -102,10 +106,10 @@ jobs:
         submodules: true
 
     - name: Set up QEMU
-      if: matrix.os == 'ubuntu-latest' && matrix.cibw_arch == 'aarch64'
+      if: matrix.os == 'ubuntu-latest' && (matrix.cibw_arch == 'aarch64' || matrix.cibw_arch == 'ppc64le')
       uses: docker/setup-qemu-action@49b3bc8e6bdd4a60e6116a5414239cba5943d3cf  # v3.2.0
       with:
-        platforms: arm64
+        platforms: arm64,ppc64le
 
     - uses: pypa/cibuildwheel@7c619efba910c04005a835b110b057fc28fd6e93  # v3.2.0
       env:
