@@ -78,6 +78,7 @@ jobs:
           - "cp312"
           - "cp313"
           - "cp314"
+          - "cp314t"
         exclude:
           - os: ubuntu-latest
             cibw_arch: universal2
