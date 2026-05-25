@@ -1,6 +1,6 @@
 [build-system]
 build-backend = "setuptools.build_meta"
-requires = ["setuptools==80.9.0"]
+requires = ["setuptools>=80.9.0,<=82.0.1"]
 
 [project]
 name = "httptools"
@@ -18,7 +18,11 @@ authors = [
     {name = "Yury Selivanov", email="yury@magic.io"},
 ]
 license = "MIT"
-license-files = ["LICENSE"]
+license-files = [
+    "LICENSE",
+    "vendor/http-parser/LICENSE-MIT",
+    "vendor/llhttp/LICENSE",
+]
 description = "A collection of framework independent HTTP protocol utils."
 readme = "README.md"
 
