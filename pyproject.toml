@@ -1,6 +1,6 @@
 [build-system]
 build-backend = "setuptools.build_meta"
-requires = ["setuptools==80.9.0"]
+requires = ["setuptools>=80.9.0,<=82.0.1"]
 
 [project]
 name = "httptools"
@@ -29,5 +29,23 @@ readme = "README.md"
 [project.urls]
 Homepage = "https://github.com/MagicStack/httptools"
 
-[project.optional-dependencies]
-test = []  # for backward compatibility
+[dependency-groups]
+dev = [
+    # type checker
+    "pyright >= 1.1.406",
+    # tests
+    "pytest",
+    # build
+    "setuptools",
+    "wheel"
+]
+
+[tool.pyright]
+pythonVersion = "3.8"
+typeCheckingMode = "strict"
+reportMissingTypeStubs = false
+reportUnnecessaryIsInstance = false
+reportUnnecessaryTypeIgnoreComment = true
+reportMissingModuleSource = false
+include = ["httptools"]
+exclude = ["tests"]

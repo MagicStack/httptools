@@ -7,7 +7,7 @@ from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext as build_ext
 
 
-CFLAGS = ['-O2']
+CFLAGS = ['-O2', '-DCYTHON_FREETHREADING_COMPATIBLE=1']
 
 ROOT = pathlib.Path(__file__).parent
 
