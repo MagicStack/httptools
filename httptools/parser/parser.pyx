@@ -128,7 +128,7 @@ cdef class HttpParser:
         self._maybe_call_on_header()
 
         if self._proto_on_headers_complete is not None:
-            self._proto_on_headers_complete()
+            return self._proto_on_headers_complete()
 
     cdef _on_chunk_header(self):
         if (self._current_header_value is not None or
@@ -352,13 +352,22 @@ cdef int cb_on_header_value(cparser.llhttp_t* parser,
 
 cdef int cb_on_headers_complete(cparser.llhttp_t* parser) except -1:
     cdef HttpParser pyparser = <HttpParser>parser.data
+    cdef object result
     try:
-        pyparser._on_headers_complete()
+        result = pyparser._on_headers_complete()
     except BaseException as ex:
         pyparser._last_error = ex
         return -1
     else:
-        if pyparser._cparser.upgrade:
+        # A protocol can veto an upgrade it doesn't want to honor (e.g. an
+        # `Upgrade: h2c` it plans to ignore) by returning False from its own
+        # `on_headers_complete`. Without this, llhttp always pauses parsing
+        # right here whenever the client asked for any upgrade, even one the
+        # application never intends to act on, leaving the rest of the
+        # message (its body, on a request that still carries one) stuck
+        # behind an HttpParserUpgrade the caller has no clean way to resume
+        # from, since the leftover bytes aren't a fresh message of their own.
+        if pyparser._cparser.upgrade and result is not False:
             return 1
         else:
             return 0

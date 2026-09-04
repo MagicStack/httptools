@@ -439,6 +439,79 @@ class TestRequestParser(unittest.TestCase):
         else:
             self.fail('HttpParserUpgrade was not raised')
 
+    def test_parser_request_upgrade_veto_keeps_body(self):
+        # A request can carry an Upgrade the receiving application has no
+        # intention of honoring (e.g. `Upgrade: h2c`, which plenty of clients
+        # send speculatively). RFC 7230 6.7 lets a server just ignore that
+        # and process the request as an ordinary HTTP/1.1 message, but until
+        # now on_headers_complete had no way to say so: llhttp always paused
+        # right there, and any body the request had (declared via
+        # Content-Length or Transfer-Encoding) was never delivered.
+        # Returning False from on_headers_complete opts out of the pause and
+        # lets the rest of the message parse normally.
+        request = (
+            b'POST / HTTP/1.1\r\n'
+            b'Host: example.com\r\n'
+            b'Upgrade: h2c\r\n'
+            b'Connection: Upgrade, HTTP2-Settings\r\n'
+            b'Transfer-Encoding: chunked\r\n'
+            b'\r\n'
+            b'3\r\nabc\r\n0\r\n\r\n'
+        )
+
+        class Protocol:
+            def __init__(self):
+                self.upgrade = None
+                self.body = b''
+                self.message_complete = False
+
+            def on_header(self, name, value):
+                if name.lower() == b'upgrade':
+                    self.upgrade = value
+
+            def on_body(self, data):
+                self.body += data
+
+            def on_message_complete(self):
+                self.message_complete = True
+
+            def on_headers_complete(self):
+                if self.upgrade is not None and self.upgrade.lower() == b'h2c':
+                    return False
+
+        protocol = Protocol()
+        parser = httptools.HttpRequestParser(protocol)
+        try:
+            parser.feed_data(request)
+        except httptools.HttpParserUpgrade:
+            # Still raised once the (now fully-parsed) message ends, so the
+            # application can act on the upgrade request afterwards if it
+            # wants to - vetoing the pause doesn't erase that it happened.
+            pass
+        else:
+            self.fail('HttpParserUpgrade was not raised')
+
+        self.assertTrue(protocol.message_complete)
+        self.assertEqual(protocol.body, b'abc')
+
+    def test_parser_request_upgrade_not_vetoed_still_pauses(self):
+        # An upgrade the application doesn't veto (the common case, e.g. a
+        # real WebSocket handshake) must keep behaving exactly as before:
+        # pause immediately at headers-complete, without waiting on a body.
+        m = mock.Mock()
+        m.on_headers_complete.return_value = None
+        p = httptools.HttpRequestParser(m)
+
+        try:
+            p.feed_data(UPGRADE_REQUEST1)
+        except httptools.HttpParserUpgrade as ex:
+            offset = ex.args[0]
+        else:
+            self.fail('HttpParserUpgrade was not raised')
+
+        self.assertEqual(UPGRADE_REQUEST1[offset:], b'Hot diggity dogg')
+        self.assertFalse(m.on_body.called)
+
     def test_parser_request_error_in_on_header(self):
         class Error(Exception):
             pass
