@@ -32,7 +32,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14", "3.14t"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14", "3.14t", "3.15", "3.15t"]
         os: [windows-latest, ubuntu-latest, macos-latest, windows-11-arm]
         exclude:
           - os: windows-11-arm
@@ -64,6 +64,7 @@ jobs:
       if: steps.release.outputs.version == 0
       with:
         python-version: ${{ matrix.python-version }}
+        allow-prereleases: true
 
     - name: Test
       if: steps.release.outputs.version == 0

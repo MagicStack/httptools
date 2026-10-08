@@ -79,6 +79,8 @@ jobs:
           - "cp313"
           - "cp314"
           - "cp314t"
+          - "cp315"
+          - "cp315t"
         exclude:
           - os: ubuntu-latest
             cibw_arch: universal2
@@ -128,7 +130,7 @@ jobs:
       with:
         platforms: arm64,riscv64,ppc64le
 
-    - uses: pypa/cibuildwheel@7c619efba910c04005a835b110b057fc28fd6e93  # v3.2.0
+    - uses: pypa/cibuildwheel@1828c10ab37f080699c7b81cea34097c684a7074  # v4.2.0
       env:
         CIBW_BUILD_VERBOSITY: 1
         CIBW_BUILD: ${{ matrix.cibw_python }}-*
