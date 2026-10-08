@@ -12,6 +12,8 @@ from . cimport url_cparser as uparser
 
 __all__ = ('parse_url',)
 
+DEF MAX_URL_LENGTH = (1 << 16) - 1
+
 @cython.freelist(250)
 cdef class URL:
     cdef readonly bytes schema
@@ -63,6 +65,14 @@ def parse_url(url):
 
     PyObject_GetBuffer(url, &py_buf, PyBUF_SIMPLE)
     try:
+        if py_buf.len > MAX_URL_LENGTH:
+            # http_parser stores URL field offsets/lengths as uint16_t,
+            # so URLs longer than this will cause silent truncation.
+            # See https://github.com/MagicStack/httptools/issues/142
+            raise HttpParserInvalidURLError(
+                "url is too long: url length of {} bytes exceeds the "
+                "maximum of {} bytes".format(py_buf.len, MAX_URL_LENGTH))
+
         buf_data = <char*>py_buf.buf
         res = uparser.http_parser_parse_url(buf_data, py_buf.len, 0, parsed)
 

@@ -12,10 +12,13 @@ else
 endif
 
 compile:
-	$(PIP) install -e .
+	$(PIP) install -e . --group dev
 
 test: compile
 	$(PYTHON) -m unittest -v
+
+typecheck: compile
+	$(PYTHON) -m pyright
 
 clean:
 	find $(ROOT)/httptools/parser -name '*.c' | xargs rm -f

@@ -686,3 +686,9 @@ class TestUrlParser(unittest.TestCase):
     def test_parser_url_10(self):
         with self.assertRaisesRegex(TypeError, 'a bytes-like object'):
             self.parse('dsf://aaa')
+
+    def test_parser_url_too_long(self):
+        url = b'http://h/' + b'a' * 65535
+        with self.assertRaisesRegex(httptools.HttpParserInvalidURLError,
+                                    'url is too long'):
+            self.parse(url)
