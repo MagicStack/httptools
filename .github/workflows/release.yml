@@ -93,11 +93,11 @@ jobs:
           - os: windows-11-arm
             cibw_arch: aarch64
           - os: windows-11-arm
-            cibw_arch: auto64
+            cibw_arch: riscv64
           - os: windows-11-arm
-            cibw_arch: "cp39"
+            cibw_python: "cp39"
           - os: windows-11-arm
-            cibw_arch: "cp10"
+            cibw_python: "cp310"
           - os: macos-latest
             cibw_arch: riscv64
           - os: windows-latest
