@@ -2,74 +2,131 @@ name: Tests
 
 on:
   push:
-    branches:
-      - master
-      - ci
+    branches: [master, ci]
   pull_request:
-    branches:
-      - master
+    branches: [master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  typecheck:
-    runs-on: ubuntu-latest
-
+  classify-tests:
+    runs-on: ubuntu-24.04
+    permissions:
+      pull-requests: read
+    outputs:
+      is_release: ${{ steps.version.outputs.is_release }}
     steps:
-    - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871  # v4.2.1
+    - name: Check for a version PR
+      id: version
+      uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
       with:
-        fetch-depth: 50
-        submodules: true
+        script: |
+          let isRelease = false;
+          if (context.eventName === 'pull_request') {
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              ...context.repo,
+              pull_number: context.payload.pull_request.number,
+              per_page: 100,
+            });
+            isRelease = files.some(({filename}) => filename === 'httptools/_version.py');
+          }
+          core.setOutput('is_release', isRelease ? 'true' : 'false');
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+  typecheck:
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       with:
-        python-version: "3.9"
+        submodules: true
+        persist-credentials: false
+
+    - name: Set up Python
+      uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7  # v10.2.0
+      with:
+        python-version: "3.14"
+        activate-environment: true
+
+    - name: Install dependencies
+      run: uv pip install -e . --group dev
 
     - name: Type check
-      run: make typecheck
+      run: pyright
 
+    - name: Audit GitHub Actions workflows
+      uses: zizmorcore/zizmor-action@cc914d7f3750a2d13d75c7f184a1060aa0e9d482  # v0.6.4
+      env:
+        GH_TOKEN: ${{ github.token }}
+      with:
+        token: ${{ github.token }}
+        online-audits: true
+        advanced-security: false
+        annotations: true
 
   build:
+    needs: classify-tests
+    if: needs.classify-tests.outputs.is_release != 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14", "3.14t", "3.15", "3.15t"]
-        os: [windows-latest, ubuntu-latest, macos-latest, windows-11-arm]
+        os: [ubuntu-24.04, macos-26, windows-2025, windows-11-arm]
         exclude:
+          - os: macos-26
+            python-version: "3.9"
           - os: windows-11-arm
             python-version: "3.9"
           - os: windows-11-arm
             python-version: "3.10"
 
-    env:
-      PIP_DISABLE_PIP_VERSION_CHECK: 1
+    defaults:
+      run:
+        shell: bash
 
     steps:
-    - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871  # v4.2.1
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       with:
-        fetch-depth: 50
         submodules: true
-
-    - name: Check if release PR.
-      uses: edgedb/action-release/validate-pr@bae6b9134e872166b43d218dd79397c851c41c9a
-      id: release
-      with:
-        github_token: ${{ secrets.RELEASE_BOT_GITHUB_TOKEN }}
-        missing_version_ok: yes
-        version_file: httptools/_version.py
-        version_line_pattern: |
-          __version__\s*=\s*(?:['"])([[:PEP440:]])(?:['"])
+        persist-credentials: false
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
-      if: steps.release.outputs.version == 0
+      uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7  # v10.2.0
       with:
         python-version: ${{ matrix.python-version }}
-        allow-prereleases: true
+        activate-environment: true
+
+    - name: Install dependencies
+      run: uv pip install -e . --group dev
 
     - name: Test
-      if: steps.release.outputs.version == 0
-      run: |
-        python -m pip install -U pip setuptools wheel
-        python -m pip install .[test]
-        cd tests
-        python -m unittest -v
+      run: python -m unittest -v tests.suite
+
+  # A stable required check for branch protection, including version PRs.
+  regression-tests:
+    name: Regression Tests
+    needs: [classify-tests, typecheck, build]
+    if: ${{ always() }}
+    runs-on: ubuntu-24.04
+    permissions: {}
+    steps:
+    - name: Check required jobs
+      uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
+      env:
+        JOBS: ${{ toJSON(needs) }}
+      with:
+        script: |
+          const jobs = JSON.parse(process.env.JOBS);
+          const expected = {
+            'classify-tests': 'success',
+            typecheck: 'success',
+            build: jobs['classify-tests'].outputs.is_release === 'true' ? 'skipped' : 'success',
+          };
+          for (const [job, result] of Object.entries(expected)) {
+            if (jobs[job].result !== result) {
+              core.setFailed(`${job}: expected ${result}, got ${jobs[job].result}`);
+            }
+          }

@@ -40,6 +40,17 @@ dev = [
     "wheel"
 ]
 
+[tool.cibuildwheel]
+build-frontend = "build"
+skip = "pp*"
+test-command = "python {project}/tests/__init__.py"
+
+[tool.cibuildwheel.macos]
+environment = {MACOSX_DEPLOYMENT_TARGET = "11"}
+
+[tool.cibuildwheel.windows]
+test-command = "python {project}\\tests\\__init__.py"
+
 [tool.pyright]
 pythonVersion = "3.8"
 typeCheckingMode = "strict"
