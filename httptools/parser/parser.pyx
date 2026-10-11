@@ -358,10 +358,7 @@ cdef int cb_on_headers_complete(cparser.llhttp_t* parser) except -1:
         pyparser._last_error = ex
         return -1
     else:
-        if pyparser._cparser.upgrade:
-            return 1
-        else:
-            return 0
+        return 0
 
 
 cdef int cb_on_body(cparser.llhttp_t* parser,

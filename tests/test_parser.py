@@ -439,6 +439,31 @@ class TestRequestParser(unittest.TestCase):
         else:
             self.fail('HttpParserUpgrade was not raised')
 
+    def test_parser_request_upgrade_with_body(self):
+        next_request = b'GET / HTTP/1.1\r\n\r\n'
+        for framing, body, expected in [
+            (b'Content-Length: 5', b'hello', [b'hello']),
+            (b'Transfer-Encoding: chunked', b'3\r\nabc\r\n0\r\n\r\n', [b'abc']),
+        ]:
+            with self.subTest(framing=framing):
+                request = (
+                    b'POST / HTTP/1.1\r\n'
+                    b'Connection: Upgrade, HTTP2-Settings\r\n'
+                    b'Upgrade: h2c\r\n'
+                    b'HTTP2-Settings: AAMAAABkAAQAoAAAAAIAAAAA\r\n'
+                    + framing + b'\r\n\r\n' + body
+                )
+                m = mock.Mock()
+                p = httptools.HttpRequestParser(m)
+
+                with self.assertRaises(httptools.HttpParserUpgrade) as cm:
+                    p.feed_data(request + next_request)
+
+                self.assertEqual(cm.exception.args[0], len(request))
+                self.assertEqual(
+                    [c.args[0] for c in m.on_body.call_args_list], expected)
+                m.on_message_complete.assert_called_once_with()
+
     def test_parser_request_error_in_on_header(self):
         class Error(Exception):
             pass
