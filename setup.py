@@ -40,6 +40,7 @@ class httptools_build_ext(build_ext):
         # same command object, so make sure not to override previously
         # set options.
         if getattr(self, '_initialized', False):
+            self.compiler = None
             return
 
         super().initialize_options()
